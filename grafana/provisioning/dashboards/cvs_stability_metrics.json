@@ -353,38 +353,11 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "avg_over_time((avg by (service) (cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"Detection\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))[1d:30m]) or label_replace(vector(0), \"service\", \"Detection\", \"\", \"\")",
-          "legendFormat": "Detection",
+          "expr": "avg_over_time((avg by (service) (cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", exception_name!~\"NoneType|KeyboardInterrupt\", service=~\"Detection|Ctm|Gtm|DecisionEngine\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))[1d:30m])",
+          "legendFormat": "{{service}}",
           "range": true,
           "interval": "1d",
           "refId": "A"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "editorMode": "code",
-          "expr": "avg_over_time((avg by (service) (cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"Ctm\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))[1d:30m]) or label_replace(vector(0), \"service\", \"Ctm\", \"\", \"\")",
-          "legendFormat": "Ctm",
-          "range": true,
-          "interval": "1d",
-          "refId": "B"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "editorMode": "code",
-          "expr": "avg_over_time((avg by (service) (cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"Gtm\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))[1d:30m]) or label_replace(vector(0), \"service\", \"Gtm\", \"\", \"\")",
-          "legendFormat": "Gtm",
-          "range": true,
-          "interval": "1d",
-          "refId": "C"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "editorMode": "code",
-          "expr": "avg_over_time((avg by (service) (cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"DecisionEngine\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))[1d:30m]) or label_replace(vector(0), \"service\", \"DecisionEngine\", \"\", \"\")",
-          "legendFormat": "DecisionEngine",
-          "range": true,
-          "interval": "1d",
-          "refId": "D"
         }
       ],
       "fieldConfig": {
