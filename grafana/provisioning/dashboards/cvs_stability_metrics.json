@@ -3,10 +3,14 @@
   "__requires": [
     { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" }
   ],
+  "id": null,
   "uid": "cvs-stability-metrics",
   "title": "CVS Stability Metrics",
-  "description": "Monitor swimmer count validity, pipeline crashes, and algo container exceptions",
+  "description": "Monitor swimmer count validity, incidents, and algo container exceptions",
   "tags": ["cvs", "stability", "algo"],
+  "schemaVersion": 36,
+  "version": 1,
+  "links": [],
   "timezone": "browser",
   "editable": true,
   "refresh": "1h",
@@ -219,7 +223,7 @@
       "id": 6,
       "type": "bargauge",
       "title": "Estimated Incidents (per pool)",
-      "description": "Estimated number of times each pool transitioned to invalid swimmer count over the selected range. Excludes non-operational pools (under_maintenance) and nightly clean restarts (cvs_maintenance_mode).",
+      "description": "Estimated number of validity state transitions per pool (valid↔invalid) over the selected range, divided by 2. Excludes non-operational pools (under_maintenance) and nightly clean restarts (cvs_maintenance_mode).",
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
       "targets": [
