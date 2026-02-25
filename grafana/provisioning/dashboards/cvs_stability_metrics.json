@@ -199,9 +199,7 @@
             "showPoints": "always",
             "lineInterpolation": "linear"
           },
-          "unit": "percent",
-          "min": 0,
-          "max": 100
+          "unit": "percent"
         },
         "overrides": []
       },
