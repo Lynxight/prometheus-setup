@@ -154,7 +154,14 @@
           "unit": "percent",
           "decimals": 1,
           "min": 0,
-          "max": 100
+          "max": 100,
+          "links": [
+            {
+              "title": "View pool logs in Elasticsearch",
+              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'host.name:\"${__field.labels.environment}\" AND container.name:*_${__field.labels.site_name}_${__field.labels.pool_name}*'))",
+              "targetBlank": true
+            }
+          ]
         },
         "overrides": [
           {
@@ -203,7 +210,14 @@
             "showPoints": "always",
             "lineInterpolation": "linear"
           },
-          "unit": "percent"
+          "unit": "percent",
+          "links": [
+            {
+              "title": "Explore logs in Elasticsearch",
+              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'*'))",
+              "targetBlank": true
+            }
+          ]
         },
         "overrides": []
       },
@@ -255,7 +269,14 @@
               { "color": "red", "value": 50 }
             ]
           },
-          "unit": "short"
+          "unit": "short",
+          "links": [
+            {
+              "title": "View pool logs in Elasticsearch",
+              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'host.name:\"${__field.labels.environment}\" AND container.name:*_${__field.labels.site_name}_${__field.labels.pool_name}*'))",
+              "targetBlank": true
+            }
+          ]
         },
         "overrides": [
           {
@@ -303,7 +324,14 @@
             "lineInterpolation": "linear"
           },
           "unit": "short",
-          "min": 0
+          "min": 0,
+          "links": [
+            {
+              "title": "Explore logs in Elasticsearch",
+              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'*'))",
+              "targetBlank": true
+            }
+          ]
         },
         "overrides": []
       },
@@ -337,7 +365,17 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" },
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short",
+          "links": [
+            {
+              "title": "View algo service logs in Elasticsearch",
+              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'container.labels.com_docker_compose_service:(detection OR ctm OR gtm OR decision_engine)'))",
+              "targetBlank": true
+            }
+          ]
+        },
         "overrides": [
           { "matcher": { "id": "byName", "options": "Time" }, "properties": [{ "id": "custom.hideFrom", "value": { "legend": true, "tooltip": true, "viz": true } }] }
         ]
@@ -373,7 +411,14 @@
             "showPoints": "always",
             "lineInterpolation": "linear"
           },
-          "unit": "short"
+          "unit": "short",
+          "links": [
+            {
+              "title": "View algo service logs in Elasticsearch",
+              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'container.labels.com_docker_compose_service:(detection OR ctm OR gtm OR decision_engine)'))",
+              "targetBlank": true
+            }
+          ]
         },
         "overrides": []
       },
@@ -401,7 +446,16 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "custom": { "filterable": true } },
+        "defaults": {
+          "custom": { "filterable": true },
+          "links": [
+            {
+              "title": "View logs for this pool/exception in Elasticsearch",
+              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'host.name:\"${__data.fields.environment}\" AND container.name:*_${__data.fields.site_name}_${__data.fields.pool_name}* AND ${__data.fields.exception_name}'))",
+              "targetBlank": true
+            }
+          ]
+        },
         "overrides": [
           { "matcher": { "id": "byName", "options": "Time" }, "properties": [{ "id": "custom.hidden", "value": true }] },
           { "matcher": { "id": "byName", "options": "__name__" }, "properties": [{ "id": "custom.hidden", "value": true }] },
