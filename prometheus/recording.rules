@@ -1,0 +1,6 @@
+groups:
+  - name: cvs_stability
+    rules:
+      # 1 when swimmer_count >= 0 and NOT in maintenance, 0 when < 0, absent during maintenance
+      - record: cvs:swimmer_valid:bool
+        expr: (swimmer_count >= bool 0) and on(pool_name, site_name, environment) (cvs_maintenance_mode == 0)
