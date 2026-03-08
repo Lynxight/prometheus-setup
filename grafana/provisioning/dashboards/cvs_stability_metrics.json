@@ -157,8 +157,8 @@
           "max": 100,
           "links": [
             {
-              "title": "View pool logs in Elasticsearch",
-              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'host.name:\"${__field.labels.environment}\" AND container.name:*_${__field.labels.site_name}_${__field.labels.pool_name}*'))",
+              "title": "View in OPS Dashboard",
+              "url": "/d/c2e10e40-2cbb-460d-91a0-83334f641194/ops-dashboard-per-site-support?var-site_name=${__field.labels.site_name}&var-server=${__field.labels.environment}&var-pool_name=${__field.labels.pool_name}&from=${__from}&to=${__to}",
               "targetBlank": true
             }
           ]
@@ -272,8 +272,8 @@
           "unit": "short",
           "links": [
             {
-              "title": "View pool logs in Elasticsearch",
-              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'host.name:\"${__field.labels.environment}\" AND container.name:*_${__field.labels.site_name}_${__field.labels.pool_name}*'))",
+              "title": "View in OPS Dashboard",
+              "url": "/d/c2e10e40-2cbb-460d-91a0-83334f641194/ops-dashboard-per-site-support?var-site_name=${__field.labels.site_name}&var-server=${__field.labels.environment}&var-pool_name=${__field.labels.pool_name}&from=${__from}&to=${__to}",
               "targetBlank": true
             }
           ]
@@ -358,7 +358,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "(avg by (service) (cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"Detection\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) or label_replace(vector(0), \"service\", \"Detection\", \"\", \"\")) or (avg by (service) (cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"Ctm\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) or label_replace(vector(0), \"service\", \"Ctm\", \"\", \"\")) or (avg by (service) (cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"Gtm\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) or label_replace(vector(0), \"service\", \"Gtm\", \"\", \"\")) or (avg by (service) (cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"DecisionEngine\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) or label_replace(vector(0), \"service\", \"DecisionEngine\", \"\", \"\"))",
+          "expr": "(avg by (service) (increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"Detection\"}[$__range]) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) or label_replace(vector(0), \"service\", \"Detection\", \"\", \"\")) or (avg by (service) (increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"Ctm\"}[$__range]) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) or label_replace(vector(0), \"service\", \"Ctm\", \"\", \"\")) or (avg by (service) (increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"Gtm\"}[$__range]) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) or label_replace(vector(0), \"service\", \"Gtm\", \"\", \"\")) or (avg by (service) (increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"DecisionEngine\"}[$__range]) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) or label_replace(vector(0), \"service\", \"DecisionEngine\", \"\", \"\"))",
           "legendFormat": "{{service}}",
           "instant": true,
           "refId": "A"
@@ -393,7 +393,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "avg_over_time((avg by (service) (cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=~\"Detection|Ctm|Gtm|DecisionEngine\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))[1d:30m]) or label_replace(vector(0), \"service\", \"Detection\", \"\", \"\") or label_replace(vector(0), \"service\", \"Ctm\", \"\", \"\") or label_replace(vector(0), \"service\", \"Gtm\", \"\", \"\") or label_replace(vector(0), \"service\", \"DecisionEngine\", \"\", \"\")",
+          "expr": "avg by (service) (increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=~\"Detection|Ctm|Gtm|DecisionEngine\"}[1d]) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"})",
           "legendFormat": "{{service}}",
           "range": true,
           "interval": "1d",
@@ -431,14 +431,14 @@
       "id": 9,
       "type": "table",
       "title": "Algo Exceptions (detailed counts)",
-      "description": "Current exception counts for algo containers (Detection, Ctm, Gtm, DecisionEngine). Detailed breakdown by pool, service, and exception type.",
+      "description": "Exception counts for algo containers (Detection, Ctm, Gtm, DecisionEngine) over the selected time range. Detailed breakdown by pool, service, and exception type.",
       "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 29 },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=~\"Detection|Ctm|Gtm|DecisionEngine\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) > 0",
+          "expr": "((last_over_time(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=~\"Detection|Ctm|Gtm|DecisionEngine\"}[$__range]) - first_over_time(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=~\"Detection|Ctm|Gtm|DecisionEngine\"}[$__range])) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) > 0",
           "legendFormat": "{{site_name}} / {{pool_name}} / {{service}} ({{exception_name}})",
           "instant": true,
           "format": "table",
@@ -450,8 +450,8 @@
           "custom": { "filterable": true },
           "links": [
             {
-              "title": "View logs for this pool/exception in Elasticsearch",
-              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'host.name:\"${__data.fields.environment}\" AND container.name:*_${__data.fields.site_name}_${__data.fields.pool_name}* AND ${__data.fields.exception_name}'))",
+              "title": "View in OPS Dashboard",
+              "url": "/d/c2e10e40-2cbb-460d-91a0-83334f641194/ops-dashboard-per-site-support?var-site_name=${__data.fields.site_name}&var-server=${__data.fields.environment}&var-pool_name=${__data.fields.pool_name}&from=${__from}&to=${__to}",
               "targetBlank": true
             }
           ]
