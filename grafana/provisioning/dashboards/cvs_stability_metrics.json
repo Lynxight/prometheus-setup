@@ -438,7 +438,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "(increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=~\"Detection|Ctm|Gtm|DecisionEngine\"}[$__range]) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) > 0",
+          "expr": "(ceil(increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=~\"Detection|Ctm|Gtm|DecisionEngine\"}[$__range])) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) > 0",
           "legendFormat": "{{site_name}} / {{pool_name}} / {{service}} ({{exception_name}})",
           "instant": true,
           "format": "table",
@@ -450,8 +450,8 @@
           "custom": { "filterable": true },
           "links": [
             {
-              "title": "View in OPS Dashboard",
-              "url": "/d/c2e10e40-2cbb-460d-91a0-83334f641194/ops-dashboard-per-site-support?var-site_name=${__data.fields.site_name}&var-server=${__data.fields.environment}&var-pool_name=${__data.fields.pool_name}&from=${__from}&to=${__to}",
+              "title": "View logs for this exception in Elasticsearch",
+              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'host.name:\"${__data.fields.environment}\" AND container.name:*_${__data.fields.site_name}_${__data.fields.pool_name}* AND \"${__data.fields.exception_name}\"'))",
               "targetBlank": true
             }
           ]

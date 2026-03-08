@@ -872,7 +872,7 @@
           "links": [
             {
               "title": "View exception logs in Elasticsearch",
-              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'host.name:\"${server}\" AND container.name:*_${site_name}_* AND \"${__field.labels.exception_name}\"'))",
+              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'host.name:\"${server}\" AND \"${__field.labels.exception_name}\"'))",
               "targetBlank": true
             }
           ]
@@ -978,7 +978,7 @@
           "links": [
             {
               "title": "View service logs in Elasticsearch",
-              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'host.name:\"${server}\" AND container.name:*_${site_name}_*'))",
+              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'host.name:\"${server}\"'))",
               "targetBlank": true
             }
           ]
