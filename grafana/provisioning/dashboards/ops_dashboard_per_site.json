@@ -898,6 +898,22 @@
             "properties": [{ "id": "custom.hidden", "value": true }]
           },
           {
+            "matcher": { "id": "byName", "options": "group" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "under_maintenance" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "site_name" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "environment" },
+            "properties": [{ "id": "displayName", "value": "server" }]
+          },
+          {
             "matcher": { "id": "byName", "options": "Value" },
             "properties": [{ "id": "displayName", "value": "Count" }]
           }
@@ -910,11 +926,24 @@
         "y": 14
       },
       "id": 84,
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": {
+              "pool_name": 0,
+              "environment": 1,
+              "service": 2,
+              "exception_name": 3,
+              "Value": 4
+            }
+          }
+        }
+      ],
       "options": {
         "showHeader": true,
         "sortBy": [
           { "desc": true, "displayName": "Count" },
-          { "desc": false, "displayName": "site_name" },
           { "desc": false, "displayName": "pool_name" }
         ]
       },

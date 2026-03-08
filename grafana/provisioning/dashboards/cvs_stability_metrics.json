@@ -462,9 +462,26 @@
           { "matcher": { "id": "byName", "options": "job" }, "properties": [{ "id": "custom.hidden", "value": true }] },
           { "matcher": { "id": "byName", "options": "name" }, "properties": [{ "id": "custom.hidden", "value": true }] },
           { "matcher": { "id": "byName", "options": "group" }, "properties": [{ "id": "custom.hidden", "value": true }] },
+          { "matcher": { "id": "byName", "options": "under_maintenance" }, "properties": [{ "id": "custom.hidden", "value": true }] },
+          { "matcher": { "id": "byName", "options": "environment" }, "properties": [{ "id": "displayName", "value": "server" }] },
           { "matcher": { "id": "byName", "options": "Value" }, "properties": [{ "id": "displayName", "value": "Count" }] }
         ]
       },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": {
+              "site_name": 0,
+              "pool_name": 1,
+              "environment": 2,
+              "service": 3,
+              "exception_name": 4,
+              "Value": 5
+            }
+          }
+        }
+      ],
       "options": {
         "showHeader": true,
         "sortBy": [{ "displayName": "Count", "desc": true }, { "displayName": "site_name", "desc": false }, { "displayName": "pool_name", "desc": false }]
