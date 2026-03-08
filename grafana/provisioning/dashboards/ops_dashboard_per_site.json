@@ -849,13 +849,23 @@
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
       },
+      "description": "Exception counts per service over the selected time range. Click a row to view logs in Elasticsearch.",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
+          "custom": {
+            "filterable": true
+          },
           "decimals": 0,
-          "mappings": [],
+          "links": [
+            {
+              "title": "View logs for this exception in Elasticsearch",
+              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'host.name:\"${__data.fields.environment}\" AND json.level:ERROR AND json.message:*${__data.fields.exception_name}*'))",
+              "targetBlank": true
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -870,31 +880,44 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Time" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "__name__" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "job" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "name" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [{ "id": "displayName", "value": "Count" }]
+          }
+        ]
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 14
       },
       "id": 84,
       "options": {
-        "displayMode": "gradient",
-        "minVizHeight": 10,
-        "minVizWidth": 0,
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showUnfilled": true,
-        "valueMode": "color"
+        "showHeader": true,
+        "sortBy": [
+          { "desc": true, "displayName": "Count" },
+          { "desc": false, "displayName": "site_name" },
+          { "desc": false, "displayName": "pool_name" }
+        ]
       },
-      "pluginVersion": "9.5.1",
       "targets": [
         {
           "datasource": {
@@ -903,16 +926,15 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by(service, exception_name) (\n  increase(cvs_exc_per_service{environment=\"$server\", exception_name!~\"SystemExit|KeyboardInterrupt\"}[$__range])\n)",
-          "format": "time_series",
-          "instant": false,
-          "legendFormat": "{{service}} - {{exception_name}}",
-          "range": true,
+          "expr": "round(increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", exception_name!~\"NoneType|SystemExit|KeyboardInterrupt\"}[$__range])) > 0",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{site_name}} / {{pool_name}} / {{service}} ({{exception_name}})",
           "refId": "A"
         }
       ],
-      "title": "Exceptions per service",
-      "type": "bargauge"
+      "title": "Exceptions (detailed counts)",
+      "type": "table"
     },
     {
       "datasource": {
@@ -999,7 +1021,7 @@
           },
           "editorMode": "builder",
           "exemplar": false,
-          "expr": "sum by(service) (cvs_exc_per_service{environment=\"$server\", exception_name!~\"SystemExit|KeyboardInterrupt\"})",
+          "expr": "sum by(service) (cvs_exc_per_service{environment=\"$server\", exception_name!~\"NoneType|SystemExit|KeyboardInterrupt\"})",
           "format": "time_series",
           "instant": false,
           "legendFormat": "{{service}} - {{exception_name}}",
