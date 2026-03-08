@@ -868,14 +868,7 @@
                 "value": 80
               }
             ]
-          },
-          "links": [
-            {
-              "title": "View exception logs in Elasticsearch",
-              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'host.name:\"${server}\" AND \"${__field.labels.exception_name}\"'))",
-              "targetBlank": true
-            }
-          ]
+          }
         },
         "overrides": []
       },
@@ -974,14 +967,7 @@
                 "value": 80
               }
             ]
-          },
-          "links": [
-            {
-              "title": "View service logs in Elasticsearch",
-              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'host.name:\"${server}\"'))",
-              "targetBlank": true
-            }
-          ]
+          }
         },
         "overrides": []
       },
