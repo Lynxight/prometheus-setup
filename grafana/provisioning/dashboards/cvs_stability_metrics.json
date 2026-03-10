@@ -1,13 +1,22 @@
 {
   "__inputs": [],
   "__requires": [
-    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" }
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    }
   ],
   "id": null,
   "uid": "cvs-stability-metrics",
   "title": "CVS Stability Metrics",
   "description": "Monitor swimmer count validity, incidents, and algo container exceptions",
-  "tags": ["cvs", "stability", "algo"],
+  "tags": [
+    "cvs",
+    "stability",
+    "algo"
+  ],
   "schemaVersion": 36,
   "version": 1,
   "links": [],
@@ -25,85 +34,184 @@
         "type": "query",
         "label": "Under Maintenance",
         "description": "Filters non-operational pools (label on swimmer_count, no join needed). Validity and incident panels also join on cvs_maintenance_mode metric to exclude nightly clean restarts.",
-        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
         "definition": "label_values(swimmer_count,under_maintenance)",
-        "query": { "query": "label_values(swimmer_count,under_maintenance)", "refId": "StandardVariableQuery" },
+        "query": {
+          "query": "label_values(swimmer_count,under_maintenance)",
+          "refId": "StandardVariableQuery"
+        },
         "refresh": 1,
         "sort": 1,
         "includeAll": true,
         "allValue": ".*",
         "multi": true,
-        "current": { "selected": true, "text": ["False"], "value": ["False"] }
+        "current": {
+          "selected": true,
+          "text": [
+            "False"
+          ],
+          "value": [
+            "False"
+          ]
+        }
       },
       {
         "name": "pool_state",
         "type": "query",
         "label": "Pool State",
-        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
         "definition": "label_values(swimmer_count{under_maintenance=~\"$under_maintenance\"},pool_state)",
-        "query": { "query": "label_values(swimmer_count{under_maintenance=~\"$under_maintenance\"},pool_state)", "refId": "StandardVariableQuery" },
+        "query": {
+          "query": "label_values(swimmer_count{under_maintenance=~\"$under_maintenance\"},pool_state)",
+          "refId": "StandardVariableQuery"
+        },
         "refresh": 1,
         "sort": 1,
         "includeAll": true,
         "allValue": ".*",
         "multi": true,
-        "current": { "selected": true, "text": ["LIVE", "SOFT_LAUNCH"], "value": ["LIVE", "SOFT_LAUNCH"] }
+        "current": {
+          "selected": true,
+          "text": [
+            "LIVE",
+            "SOFT_LAUNCH"
+          ],
+          "value": [
+            "LIVE",
+            "SOFT_LAUNCH"
+          ]
+        }
       },
       {
         "name": "deploy_group",
         "type": "query",
         "label": "Deploy Group",
-        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
         "definition": "label_values(swimmer_count{pool_state=~\"$pool_state\"},group)",
-        "query": { "query": "label_values(swimmer_count{pool_state=~\"$pool_state\"},group)", "refId": "StandardVariableQuery" },
+        "query": {
+          "query": "label_values(swimmer_count{pool_state=~\"$pool_state\"},group)",
+          "refId": "StandardVariableQuery"
+        },
         "refresh": 2,
         "sort": 1,
         "includeAll": true,
         "allValue": ".*",
         "multi": true,
-        "current": { "selected": true, "text": ["All"], "value": ["$__all"] }
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
       },
       {
         "name": "server",
         "type": "query",
         "label": "Server",
-        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
         "definition": "label_values(swimmer_count{pool_state=~\"$pool_state\", group=~\"$deploy_group\"},environment)",
-        "query": { "query": "label_values(swimmer_count{pool_state=~\"$pool_state\", group=~\"$deploy_group\"},environment)", "refId": "StandardVariableQuery" },
+        "query": {
+          "query": "label_values(swimmer_count{pool_state=~\"$pool_state\", group=~\"$deploy_group\"},environment)",
+          "refId": "StandardVariableQuery"
+        },
         "refresh": 2,
         "sort": 1,
         "includeAll": true,
         "allValue": ".*",
         "multi": true,
-        "current": { "selected": true, "text": ["All"], "value": ["$__all"] }
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
       },
       {
         "name": "site_name",
         "type": "query",
         "label": "Site",
-        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
         "definition": "label_values(swimmer_count{pool_state=~\"$pool_state\", environment=~\"$server\", group=~\"$deploy_group\"},site_name)",
-        "query": { "query": "label_values(swimmer_count{pool_state=~\"$pool_state\", environment=~\"$server\", group=~\"$deploy_group\"},site_name)", "refId": "StandardVariableQuery" },
+        "query": {
+          "query": "label_values(swimmer_count{pool_state=~\"$pool_state\", environment=~\"$server\", group=~\"$deploy_group\"},site_name)",
+          "refId": "StandardVariableQuery"
+        },
         "refresh": 2,
         "sort": 1,
         "includeAll": true,
         "allValue": ".*",
         "multi": true,
-        "current": { "selected": true, "text": ["All"], "value": ["$__all"] }
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
       },
       {
         "name": "pool_name",
         "type": "query",
         "label": "Pool",
-        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
         "definition": "label_values(swimmer_count{pool_state=~\"$pool_state\", environment=~\"$server\", group=~\"$deploy_group\", site_name=~\"$site_name\"},pool_name)",
-        "query": { "query": "label_values(swimmer_count{pool_state=~\"$pool_state\", environment=~\"$server\", group=~\"$deploy_group\", site_name=~\"$site_name\"},pool_name)", "refId": "StandardVariableQuery" },
+        "query": {
+          "query": "label_values(swimmer_count{pool_state=~\"$pool_state\", environment=~\"$server\", group=~\"$deploy_group\", site_name=~\"$site_name\"},pool_name)",
+          "refId": "StandardVariableQuery"
+        },
         "refresh": 2,
         "sort": 1,
         "includeAll": true,
         "allValue": ".*",
         "multi": true,
-        "current": { "selected": true, "text": ["All"], "value": ["$__all"] }
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
+      },
+      {
+        "name": "cvs_version",
+        "type": "textbox",
+        "label": "CVS Version (e.g. 303 = Mar 3, -1 = all)",
+        "current": {
+          "selected": false,
+          "text": "-1",
+          "value": "-1"
+        },
+        "options": [
+          { "selected": true, "text": "-1", "value": "-1" }
+        ]
       }
     ]
   },
@@ -112,7 +220,12 @@
       "id": 1,
       "type": "row",
       "title": "Swimmer Count Validity",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "collapsed": false
     },
     {
@@ -120,21 +233,35 @@
       "type": "bargauge",
       "title": "% Time with Valid Swimmer Count (per pool)",
       "description": "Percentage of time each pool had a valid swimmer count over the selected time range. Lower = less stable.",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 1 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 1
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
           "editorMode": "code",
-          "expr": "avg(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range]) * 100)",
+          "expr": "avg(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range]) * 100 and on(pool_name, site_name) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))",
           "legendFormat": "OVERALL AVERAGE",
           "instant": true,
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
           "editorMode": "code",
-          "expr": "sort(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range]) * 100)",
+          "expr": "sort(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range]) * 100 and on(pool_name, site_name) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))",
           "legendFormat": "{{site_name}} / {{pool_name}}",
           "instant": true,
           "refId": "B"
@@ -142,13 +269,24 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "continuous-RdYlGr" },
+          "color": {
+            "mode": "continuous-RdYlGr"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 80 },
-              { "color": "green", "value": 95 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 80
+              },
+              {
+                "color": "green",
+                "value": 95
+              }
             ]
           },
           "unit": "percent",
@@ -165,9 +303,18 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "OVERALL AVERAGE" },
+            "matcher": {
+              "id": "byName",
+              "options": "OVERALL AVERAGE"
+            },
             "properties": [
-              { "id": "color", "value": { "mode": "fixed", "fixedColor": "white" } }
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "white"
+                }
+              }
             ]
           }
         ]
@@ -175,7 +322,13 @@
       "options": {
         "orientation": "horizontal",
         "displayMode": "gradient",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "showUnfilled": true,
         "minVizWidth": 8,
         "minVizHeight": 16
@@ -186,13 +339,24 @@
       "type": "timeseries",
       "title": "Daily Trend: Validity % (overall avg)",
       "description": "Daily overall average of swimmer count validity percentage.",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 1 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
           "editorMode": "code",
-          "expr": "avg(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[1d]) * 100)",
+          "expr": "avg(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[1d]) * 100 and on(pool_name, site_name) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))",
           "legendFormat": "Validity %",
           "range": true,
           "interval": "1d",
@@ -201,7 +365,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "fixed", "fixedColor": "green" },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
@@ -222,37 +389,67 @@
         "overrides": []
       },
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true, "calcs": ["mean", "lastNotNull"] },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
       "id": 5,
       "type": "row",
       "title": "Invalid Swimmer Count Incidents",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
       "collapsed": false
     },
     {
       "id": 6,
       "type": "bargauge",
       "title": "Estimated Incidents (per pool)",
-      "description": "Estimated number of validity state transitions per pool (valid↔invalid) over the selected range, divided by 2. Excludes non-operational pools (under_maintenance) and nightly clean restarts (cvs_maintenance_mode).",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "description": "Estimated number of validity state transitions per pool (valid\u2194invalid) over the selected range, divided by 2. Excludes non-operational pools (under_maintenance) and nightly clean restarts (cvs_maintenance_mode).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
           "editorMode": "code",
-          "expr": "avg(ceil(changes(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range]) / 2))",
+          "expr": "avg(ceil(changes(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range]) / 2) and on(pool_name, site_name) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))",
           "legendFormat": "OVERALL AVERAGE",
           "instant": true,
           "refId": "A"
         },
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
           "editorMode": "code",
-          "expr": "sort_desc(ceil(changes(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range]) / 2))",
+          "expr": "sort_desc(ceil(changes(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range]) / 2) and on(pool_name, site_name) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))",
           "legendFormat": "{{site_name}} / {{pool_name}}",
           "instant": true,
           "refId": "B"
@@ -260,13 +457,24 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "continuous-BlYlRd" },
+          "color": {
+            "mode": "continuous-BlYlRd"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 10 },
-              { "color": "red", "value": 50 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
             ]
           },
           "unit": "short",
@@ -280,9 +488,18 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "OVERALL AVERAGE" },
+            "matcher": {
+              "id": "byName",
+              "options": "OVERALL AVERAGE"
+            },
             "properties": [
-              { "id": "color", "value": { "mode": "fixed", "fixedColor": "white" } }
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "white"
+                }
+              }
             ]
           }
         ]
@@ -290,7 +507,13 @@
       "options": {
         "orientation": "horizontal",
         "displayMode": "gradient",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "showUnfilled": true
       }
     },
@@ -299,13 +522,24 @@
       "type": "timeseries",
       "title": "Daily Trend: Avg Incidents per Pool (overall avg)",
       "description": "Daily overall average of invalid swimmer count incidents per pool. Excludes non-operational pools (under_maintenance) and nightly clean restarts (cvs_maintenance_mode).",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
           "editorMode": "code",
-          "expr": "avg(ceil(changes(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[1d]) / 2))",
+          "expr": "avg(ceil(changes(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[1d]) / 2) and on(pool_name, site_name) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))",
           "legendFormat": "Incidents",
           "range": true,
           "interval": "1d",
@@ -314,7 +548,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "fixed", "fixedColor": "orange" },
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          },
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
@@ -336,15 +573,31 @@
         "overrides": []
       },
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true, "calcs": ["mean", "lastNotNull"] },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
       "id": 8,
       "type": "row",
       "title": "Algo Container Exceptions",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
       "collapsed": false
     },
     {
@@ -352,13 +605,24 @@
       "type": "barchart",
       "title": "Avg Exceptions per Pool by Algo Container",
       "description": "Average exception count per pool, grouped by algo container. Shows the mean across all matching pools.",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 21 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 21
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
           "editorMode": "code",
-          "expr": "(sum by (service) (increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"Detection\"}[$__range]) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) / scalar(count(count by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))) or label_replace(vector(0), \"service\", \"Detection\", \"\", \"\")) or (sum by (service) (increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"Ctm\"}[$__range]) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) / scalar(count(count by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))) or label_replace(vector(0), \"service\", \"Ctm\", \"\", \"\")) or (sum by (service) (increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"Gtm\"}[$__range]) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) / scalar(count(count by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))) or label_replace(vector(0), \"service\", \"Gtm\", \"\", \"\")) or (sum by (service) (increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"DecisionEngine\"}[$__range]) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) / scalar(count(count by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))) or label_replace(vector(0), \"service\", \"DecisionEngine\", \"\", \"\"))",
+          "expr": "(sum by (service) (increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"Detection\"}[$__range]) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0)) / scalar(count(count by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))) or label_replace(vector(0), \"service\", \"Detection\", \"\", \"\")) or (sum by (service) (increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"Ctm\"}[$__range]) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0)) / scalar(count(count by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))) or label_replace(vector(0), \"service\", \"Ctm\", \"\", \"\")) or (sum by (service) (increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"Gtm\"}[$__range]) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0)) / scalar(count(count by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))) or label_replace(vector(0), \"service\", \"Gtm\", \"\", \"\")) or (sum by (service) (increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=\"DecisionEngine\"}[$__range]) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0)) / scalar(count(count by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))) or label_replace(vector(0), \"service\", \"DecisionEngine\", \"\", \"\"))",
           "legendFormat": "{{service}}",
           "instant": true,
           "refId": "A"
@@ -366,7 +630,9 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "unit": "short",
           "links": [
             {
@@ -377,23 +643,54 @@
           ]
         },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "Time" }, "properties": [{ "id": "custom.hideFrom", "value": { "legend": true, "tooltip": true, "viz": true } }] }
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": true,
+                  "tooltip": true,
+                  "viz": true
+                }
+              }
+            ]
+          }
         ]
       },
-      "options": { "orientation": "horizontal", "showValue": "always", "barWidth": 0.8, "groupWidth": 0.7 }
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "barWidth": 0.8,
+        "groupWidth": 0.7
+      }
     },
     {
       "id": 12,
       "type": "timeseries",
       "title": "Daily Trend: Avg Exceptions per Pool by Container",
       "description": "Daily overall average of algo container exception counts per pool, grouped by service.",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 21 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 21
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
           "editorMode": "code",
-          "expr": "sum by (service) (increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=~\"Detection|Ctm|Gtm|DecisionEngine\"}[1d]) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) / scalar(count(count by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"})))",
+          "expr": "sum by (service) (increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=~\"Detection|Ctm|Gtm|DecisionEngine\"}[1d]) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0)) / scalar(count(count by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"})))",
           "legendFormat": "{{service}}",
           "range": true,
           "interval": "1d",
@@ -402,7 +699,9 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
@@ -423,8 +722,19 @@
         "overrides": []
       },
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true, "calcs": ["mean", "lastNotNull"] },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
@@ -432,13 +742,24 @@
       "type": "table",
       "title": "Algo Exceptions (detailed counts)",
       "description": "Exception counts for algo containers (Detection, Ctm, Gtm, DecisionEngine) over the selected time range. Detailed breakdown by pool, service, and exception type.",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 29 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
           "editorMode": "code",
-          "expr": "(round(increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=~\"Detection|Ctm|Gtm|DecisionEngine\"}[$__range])) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) > 0",
+          "expr": "(round(increase(cvs_exc_per_service{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\", exception_name!~\"NoneType|KeyboardInterrupt\", service=~\"Detection|Ctm|Gtm|DecisionEngine\"}[$__range])) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0)) > 0",
           "legendFormat": "{{site_name}} / {{pool_name}} / {{service}} ({{exception_name}})",
           "instant": true,
           "format": "table",
@@ -447,7 +768,9 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "custom": { "filterable": true },
+          "custom": {
+            "filterable": true
+          },
           "links": [
             {
               "title": "View logs for this exception in Elasticsearch",
@@ -457,14 +780,102 @@
           ]
         },
         "overrides": [
-          { "matcher": { "id": "byName", "options": "Time" }, "properties": [{ "id": "custom.hidden", "value": true }] },
-          { "matcher": { "id": "byName", "options": "__name__" }, "properties": [{ "id": "custom.hidden", "value": true }] },
-          { "matcher": { "id": "byName", "options": "job" }, "properties": [{ "id": "custom.hidden", "value": true }] },
-          { "matcher": { "id": "byName", "options": "name" }, "properties": [{ "id": "custom.hidden", "value": true }] },
-          { "matcher": { "id": "byName", "options": "group" }, "properties": [{ "id": "custom.hidden", "value": true }] },
-          { "matcher": { "id": "byName", "options": "under_maintenance" }, "properties": [{ "id": "custom.hidden", "value": true }] },
-          { "matcher": { "id": "byName", "options": "environment" }, "properties": [{ "id": "displayName", "value": "server" }] },
-          { "matcher": { "id": "byName", "options": "Value" }, "properties": [{ "id": "displayName", "value": "Count" }] }
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "__name__"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "job"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "name"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "group"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "under_maintenance"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "environment"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "server"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Count"
+              }
+            ]
+          }
         ]
       },
       "transformations": [
@@ -484,7 +895,20 @@
       ],
       "options": {
         "showHeader": true,
-        "sortBy": [{ "displayName": "Count", "desc": true }, { "displayName": "site_name", "desc": false }, { "displayName": "pool_name", "desc": false }]
+        "sortBy": [
+          {
+            "displayName": "Count",
+            "desc": true
+          },
+          {
+            "displayName": "site_name",
+            "desc": false
+          },
+          {
+            "displayName": "pool_name",
+            "desc": false
+          }
+        ]
       }
     }
   ]
