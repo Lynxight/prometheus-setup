@@ -71,6 +71,8 @@
           "editorMode": "code",
           "expr": "sum(rate(container_network_transmit_bytes_total{environment=~\"$server\", name=~\"lynxight_file_uploader|lynxight_live_view|publish_messages_to_cloud|lynxight_health_service|lynxight_caddy|prometheus|alert_registrant|handle_snap_image\"}[$__rate_interval]))",
           "legendFormat": "",
+          "interval": "1m",
+          "intervalFactor": 20,
           "range": true,
           "refId": "A"
         }
@@ -128,6 +130,7 @@
       },
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 6 },
       "id": 21,
+      "maxDataPoints": 500,
       "options": {
         "legend": {
           "calcs": ["mean", "max", "lastNotNull"],
@@ -145,6 +148,8 @@
           "editorMode": "code",
           "expr": "sum by (name) (rate(container_network_transmit_bytes_total{environment=~\"$server\", name=~\"lynxight_file_uploader|lynxight_live_view|publish_messages_to_cloud|lynxight_health_service|lynxight_caddy|prometheus|alert_registrant|handle_snap_image\"}[$__rate_interval]))",
           "legendFormat": "{{name}}",
+          "interval": "1m",
+          "intervalFactor": 20,
           "range": true,
           "refId": "A"
         }
@@ -202,6 +207,7 @@
       },
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 17 },
       "id": 31,
+      "maxDataPoints": 500,
       "options": {
         "legend": {
           "calcs": ["mean", "max", "lastNotNull"],
@@ -219,6 +225,8 @@
           "editorMode": "code",
           "expr": "sum by (environment) (rate(container_network_transmit_bytes_total{environment=~\"$server\", name=~\"lynxight_file_uploader|lynxight_live_view|publish_messages_to_cloud|lynxight_health_service|lynxight_caddy|prometheus|alert_registrant|handle_snap_image\"}[$__rate_interval]))",
           "legendFormat": "{{environment}}",
+          "interval": "1m",
+          "intervalFactor": 20,
           "range": true,
           "refId": "A"
         }
@@ -293,7 +301,7 @@
     ]
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-7d",
     "to": "now"
   },
   "timepicker": {},
