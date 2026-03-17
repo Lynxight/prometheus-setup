@@ -68,7 +68,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "sum(irate(node_network_transmit_bytes_total{instance=~\"$server\", device!~\"lo|docker.*|br-.*|veth.*|tailscale.*\"}[1m]))",
+          "expr": "sum(irate(node_network_transmit_bytes_total{instance=~\"$server\", device!~\"lo|docker.*|br-.*|veth.*|tailscale.*\"}[$__rate_interval]))",
           "legendFormat": "",
           "range": true,
           "refId": "A"
@@ -235,7 +235,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "topk(20, irate(node_network_transmit_bytes_total{instance=~\"$server\", device!~\"lo|docker.*|br-.*|veth.*|tailscale.*\"}[1m]))",
+          "expr": "topk(20, irate(node_network_transmit_bytes_total{instance=~\"$server\", device!~\"lo|docker.*|br-.*|veth.*|tailscale.*\"}[$__rate_interval]))",
           "legendFormat": "{{instance}} - {{device}}",
           "range": true,
           "refId": "A"
@@ -309,7 +309,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "sum by (name) (rate(container_network_transmit_bytes_total{environment=~\"$server\", name=~\"lynxight_file_uploader|lynxight_live_view|publish_messages_to_cloud|lynxight_health_service|lynxight_caddy|prometheus|alert_registrant|handle_snap_image\"}[1m]))",
+          "expr": "sum by (name) (rate(container_network_transmit_bytes_total{environment=~\"$server\", name=~\"lynxight_file_uploader|lynxight_live_view|publish_messages_to_cloud|lynxight_health_service|lynxight_caddy|prometheus|alert_registrant|handle_snap_image\"}[$__rate_interval]))",
           "legendFormat": "{{name}}",
           "range": true,
           "refId": "A"
@@ -492,7 +492,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "sum(irate(node_network_transmit_bytes_total{instance=~\"$server\", device!~\"lo|docker.*|br-.*|veth.*|tailscale.*\"}[1m]))",
+          "expr": "sum(irate(node_network_transmit_bytes_total{instance=~\"$server\", device!~\"lo|docker.*|br-.*|veth.*|tailscale.*\"}[$__rate_interval]))",
           "legendFormat": "Host Total (external)",
           "range": true,
           "refId": "A"
@@ -518,7 +518,7 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "5m",
+  "refresh": "30m",
   "schemaVersion": 38,
   "style": "dark",
   "tags": [
