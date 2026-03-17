@@ -116,7 +116,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "sum(file_upload_bytes_per_second{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) or vector(0)",
+          "expr": "sum(file_upload_bytes_per_second{environment=~\"$server\", site_name=~\"$site_name\"}) or vector(0)",
           "legendFormat": "",
           "range": true,
           "refId": "A"
@@ -164,7 +164,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "sum(live_view_stream_bytes_per_second{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) or vector(0)",
+          "expr": "sum(live_view_stream_bytes_per_second{environment=~\"$server\", site_name=~\"$site_name\"}) or vector(0)",
           "legendFormat": "",
           "range": true,
           "refId": "A"
@@ -174,11 +174,11 @@
       "type": "stat"
     },
     {
-      "collapsed": false,
+      "collapsed": true,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
       "id": 10,
       "panels": [],
-      "title": "Host Level (node_exporter)",
+      "title": "Host Level by Interface (node_exporter)",
       "type": "row"
     },
     {
@@ -235,7 +235,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "irate(node_network_transmit_bytes_total{instance=~\"$server\", device!~\"lo|docker.*|br-.*|veth.*|tailscale.*\"}[1m])",
+          "expr": "topk(20, irate(node_network_transmit_bytes_total{instance=~\"$server\", device!~\"lo|docker.*|br-.*|veth.*|tailscale.*\"}[1m]))",
           "legendFormat": "{{instance}} - {{device}}",
           "range": true,
           "refId": "A"
@@ -393,7 +393,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "file_upload_bytes_per_second{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}",
+          "expr": "file_upload_bytes_per_second{environment=~\"$server\", site_name=~\"$site_name\"}",
           "legendFormat": "File Uploader ({{environment}} - {{site_name}}/{{pool_name}})",
           "range": true,
           "refId": "A"
@@ -401,7 +401,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "live_view_stream_bytes_per_second{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}",
+          "expr": "live_view_stream_bytes_per_second{environment=~\"$server\", site_name=~\"$site_name\"}",
           "legendFormat": "Live View ({{environment}} - {{site_name}}/{{pool_name}})",
           "range": true,
           "refId": "B"
@@ -500,7 +500,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "sum(file_upload_bytes_per_second{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) or vector(0)",
+          "expr": "sum(file_upload_bytes_per_second{environment=~\"$server\", site_name=~\"$site_name\"}) or vector(0)",
           "legendFormat": "App: File Uploader",
           "range": true,
           "refId": "B"
@@ -508,7 +508,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
           "editorMode": "code",
-          "expr": "sum(live_view_stream_bytes_per_second{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) or vector(0)",
+          "expr": "sum(live_view_stream_bytes_per_second{environment=~\"$server\", site_name=~\"$site_name\"}) or vector(0)",
           "legendFormat": "App: Live View",
           "range": true,
           "refId": "C"
@@ -518,7 +518,7 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "30s",
+  "refresh": "5m",
   "schemaVersion": 38,
   "style": "dark",
   "tags": [
@@ -580,38 +580,11 @@
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": ["All"],
-          "value": ["$__all"]
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "PBFA97CFB590B2093"
-        },
-        "definition": "label_values(swimmer_count{site_name=~\"$site_name\"},pool_name)",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Pool",
-        "multi": true,
-        "name": "pool_name",
-        "options": [],
-        "query": {
-          "query": "label_values(swimmer_count{site_name=~\"$site_name\"},pool_name)",
-          "refId": "PrometheusVariableQueryEditor-VariableQuery"
-        },
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
       }
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-24h",
     "to": "now"
   },
   "timepicker": {},
