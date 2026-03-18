@@ -24,63 +24,6 @@
     {
       "collapsed": false,
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
-      "id": 1,
-      "panels": [],
-      "title": "Current Rates",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "description": "Sum of all external-facing container network transmit (cadvisor)",
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "mappings": [
-            { "options": { "match": "null", "result": { "text": "N/A" } }, "type": "special" }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null }
-            ]
-          },
-          "unit": "Bps"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 1 },
-      "id": 2,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "editorMode": "code",
-          "expr": "sum(rate(container_network_transmit_bytes_total{environment=~\"$server\", name=~\"lynxight_file_uploader|lynxight_live_view|publish_messages_to_cloud|lynxight_health_service|lynxight_caddy|prometheus|alert_registrant|handle_snap_image\"}[$__rate_interval]))",
-          "legendFormat": "",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Total Upload Rate",
-      "type": "stat"
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
       "id": 20,
       "panels": [],
       "title": "Upload by Service (cadvisor)",
@@ -91,7 +34,7 @@
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
       },
-      "description": "Network transmit per container from cadvisor. Includes some internal overhead (Redis), but external uploads dominate for these services.",
+      "description": "Upload rate broken down by Docker service, summed across all selected servers. Shows which service type (file_uploader, live_view, etc.) is responsible for the most upload traffic.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -126,7 +69,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 6 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 1 },
       "id": 21,
       "options": {
         "legend": {
@@ -145,6 +88,7 @@
           "editorMode": "code",
           "expr": "sum by (name) (rate(container_network_transmit_bytes_total{environment=~\"$server\", name=~\"lynxight_file_uploader|lynxight_live_view|publish_messages_to_cloud|lynxight_health_service|lynxight_caddy|prometheus|alert_registrant|handle_snap_image\"}[$__rate_interval]))",
           "legendFormat": "{{name}}",
+          "intervalFactor": 2,
           "range": true,
           "refId": "A"
         }
@@ -154,7 +98,7 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 },
       "id": 30,
       "panels": [],
       "title": "Upload by Server",
@@ -165,7 +109,7 @@
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
       },
-      "description": "Total upload across all external-facing containers, grouped by server.",
+      "description": "Upload rate broken down by CVS machine. Shows which server is uploading the most. Sum of all external-facing containers per server.",
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -200,7 +144,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 17 },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 12 },
       "id": 31,
       "options": {
         "legend": {
@@ -219,6 +163,7 @@
           "editorMode": "code",
           "expr": "sum by (environment) (rate(container_network_transmit_bytes_total{environment=~\"$server\", name=~\"lynxight_file_uploader|lynxight_live_view|publish_messages_to_cloud|lynxight_health_service|lynxight_caddy|prometheus|alert_registrant|handle_snap_image\"}[$__rate_interval]))",
           "legendFormat": "{{environment}}",
+          "intervalFactor": 2,
           "range": true,
           "refId": "A"
         }
@@ -293,7 +238,7 @@
     ]
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-7d",
     "to": "now"
   },
   "timepicker": {},
