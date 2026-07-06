@@ -231,7 +231,7 @@
     {
       "id": 3,
       "type": "bargauge",
-      "title": "% Time with Valid Swimmer Count (per pool)",
+      "title": "% Time with Valid Swimmer Count (per pool, excluding nightly restart)",
       "description": "Percentage of time each pool had a valid swimmer count over the selected time range. Lower = less stable.",
       "datasource": {
         "type": "prometheus",

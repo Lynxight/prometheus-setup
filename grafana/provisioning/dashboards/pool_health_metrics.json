@@ -203,7 +203,7 @@
     {
       "id": 1,
       "type": "row",
-      "title": "Swimmer Count \u2014 Uninterrupted",
+      "title": "Swimmer Count",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -216,8 +216,8 @@
     {
       "id": 2,
       "type": "timeseries",
-      "title": "Swimmer Count (red marks = -1 / interrupted)",
-      "description": "Reported swimmer count per pool. Red points mark samples where the count is -1, i.e. the pool reported an interrupted / invalid swimmer count.",
+      "title": "Swimmer Count (red marks = -1, excluding nightly restart)",
+      "description": "Reported swimmer count per pool. Red points mark samples where the count is -1 (interrupted / invalid swimmer count) outside planned maintenance windows: the nightly restart and any other clean stop set cvs_maintenance_mode=1, which suppresses the red marks. The raw line still dips to -1 during those windows.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -246,7 +246,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"} == -1",
+          "expr": "(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"} == -1) and on(site_name, pool_name, environment) (cvs_maintenance_mode == 0)",
           "legendFormat": "INTERRUPTED \u2014 {{site_name}} / {{pool_name}}",
           "refId": "B",
           "range": true
@@ -328,8 +328,8 @@
     {
       "id": 3,
       "type": "bargauge",
-      "title": "% Time Uninterrupted (per pool)",
-      "description": "Percentage of the selected time range with a valid swimmer count (swimmer_count >= 0). Maintenance windows are excluded from the calculation (cvs:swimmer_valid:bool is absent during maintenance).",
+      "title": "% Time with Valid Swimmer Count (excluding nightly restart)",
+      "description": "Percentage of the selected time range with a valid swimmer count (swimmer_count >= 0), per pool. Planned maintenance windows \u2014 the nightly restart and any other clean stop (cvs_maintenance_mode=1) \u2014 are excluded from the calculation via the cvs:swimmer_valid:bool recording rule, matching the red marks on the graph.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
