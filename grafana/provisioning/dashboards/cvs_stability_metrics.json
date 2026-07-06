@@ -232,7 +232,7 @@
       "id": 3,
       "type": "bargauge",
       "title": "% Time with Valid Swimmer Count (per pool, excluding nightly restart)",
-      "description": "Percentage of time each pool had a valid swimmer count over the selected time range. Lower = less stable.",
+      "description": "Percentage of time each pool had a valid swimmer count over the selected time range. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded via the cvs:swimmer_valid:bool recording rule. Lower = less stable.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"

@@ -27,24 +27,6 @@ OPS_LINK = {
 ids = iter(range(1, 100))
 
 
-def variable(name, label, query, chain=""):
-    q = f"label_values(swimmer_count{{{chain}}},{name if name not in ('server', 'deploy_group') else {'server': 'environment', 'deploy_group': 'group'}[name]})" if chain else f"label_values(swimmer_count,{name})"
-    return {
-        "name": name,
-        "type": "query",
-        "label": label,
-        "datasource": DS,
-        "definition": query,
-        "query": {"query": query, "refId": "StandardVariableQuery"},
-        "refresh": 2,
-        "sort": 1,
-        "includeAll": True,
-        "allValue": ".*",
-        "multi": True,
-        "current": {"selected": True, "text": ["All"], "value": ["$__all"]},
-    }
-
-
 def row(title, y):
     return {"id": next(ids), "type": "row", "title": title, "collapsed": False,
             "gridPos": {"h": 1, "w": 24, "x": 0, "y": y}, "panels": []}
