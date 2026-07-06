@@ -233,7 +233,7 @@ panels.append(timeseries(
     "cameras of a server indicate a host/network pause rather than a camera issue.",
     y,
     [target(f"max_time_between_frames{{{F}}}{SW_JOIN}", CAM_LEGEND, "A")],
-    unit="suffix: s", steps=[{"color": "green", "value": None}, {"color": "red", "value": 1}], calcs=["mean", "max", "lastNotNull"], min_y=0, soft_max=2,
+    unit="suffix: s", steps=[{"color": "green", "value": None}, {"color": "yellow", "value": 0.5}, {"color": "red", "value": 1}], calcs=["mean", "max", "lastNotNull"], min_y=0, soft_max=2,
 ))
 panels.append(bargauge(
     "% Time Frame Gap < 1s (per camera)",
