@@ -57,7 +57,7 @@ def target(expr, legend, ref, instant=False):
     return t
 
 
-def timeseries(title, desc, y, targets, unit, steps, calcs, overrides=None, min_y=None):
+def timeseries(title, desc, y, targets, unit, steps, calcs, overrides=None, min_y=None, soft_max=None):
     custom = {
         "drawStyle": "line",
         "lineWidth": 1,
@@ -67,6 +67,8 @@ def timeseries(title, desc, y, targets, unit, steps, calcs, overrides=None, min_
         "lineInterpolation": "linear",
         "spanNulls": False,
     }
+    if soft_max is not None:
+        custom["axisSoftMax"] = soft_max
     if steps is None:
         steps = [{"color": "green", "value": None}]
     else:
@@ -192,7 +194,7 @@ panels.append(timeseries(
     "Detection pipeline FPS per pool. Healthy: > 0.9 (target-normalized, ~1.0 when keeping up).",
     y,
     [target(f"detection_fps{{{F}}}{SW_JOIN}", POOL_LEGEND, "A")],
-    unit="none", steps=[{"color": "red", "value": None}, {"color": "yellow", "value": 0.8}, {"color": "green", "value": 0.9}], calcs=["mean", "min", "lastNotNull"], min_y=0,
+    unit="none", steps=[{"color": "red", "value": None}, {"color": "yellow", "value": 0.8}, {"color": "green", "value": 0.9}], calcs=["mean", "min", "lastNotNull"], min_y=0, soft_max=1.1,
 ))
 panels.append(bargauge(
     "% Time Detection FPS > 0.9 (per pool)",
@@ -209,7 +211,7 @@ panels.append(timeseries(
     "Decision engine FPS per pool. Healthy: > 0.9.",
     y,
     [target(f"decisions_engine_fps{{{F}}}{SW_JOIN}", POOL_LEGEND, "A")],
-    unit="none", steps=[{"color": "red", "value": None}, {"color": "yellow", "value": 0.8}, {"color": "green", "value": 0.9}], calcs=["mean", "min", "lastNotNull"], min_y=0,
+    unit="none", steps=[{"color": "red", "value": None}, {"color": "yellow", "value": 0.8}, {"color": "green", "value": 0.9}], calcs=["mean", "min", "lastNotNull"], min_y=0, soft_max=1.1,
 ))
 panels.append(bargauge(
     "% Time Decision FPS > 0.9 (per pool)",
@@ -228,7 +230,7 @@ panels.append(timeseries(
     "cameras of a server indicate a host/network pause rather than a camera issue.",
     y,
     [target(f"max_time_between_frames{{{F}}}{SW_JOIN}", CAM_LEGEND, "A")],
-    unit="s", steps=[{"color": "green", "value": None}, {"color": "red", "value": 1}], calcs=["mean", "max", "lastNotNull"], min_y=0,
+    unit="suffix: s", steps=[{"color": "green", "value": None}, {"color": "red", "value": 1}], calcs=["mean", "max", "lastNotNull"], min_y=0, soft_max=2,
 ))
 panels.append(bargauge(
     "% Time Frame Gap < 1s (per camera)",
@@ -247,7 +249,7 @@ panels.append(timeseries(
     "and counts as healthy, so the red zone starts just above 1.5.",
     y,
     [target(f"mean_fuse_error{{{F}}}{SW_JOIN}", CAM_LEGEND, "A")],
-    unit="none", steps=[{"color": "green", "value": None}, {"color": "red", "value": 1.501}], calcs=["mean", "max", "lastNotNull"], min_y=0,
+    unit="none", steps=[{"color": "green", "value": None}, {"color": "red", "value": 1.501}], calcs=["mean", "max", "lastNotNull"], min_y=0, soft_max=2,
 ))
 panels.append(bargauge(
     "% Time Fuse Error <= 1.5 (per camera)",
