@@ -15,7 +15,7 @@ SWF = F + ', pool_state=~"$pool_state", under_maintenance=~"$under_maintenance"'
 SW_JOIN = f" and on(site_name, pool_name, environment) swimmer_count{{{SWF}}}"
 # excludes nightly restart / clean stops from the %-compliance gauges,
 # matching the swimmer-count gauge (which gets this via cvs:swimmer_valid:bool)
-MAINT_GATE = " and on(site_name, pool_name, environment) (cvs_maintenance_mode == 0)"
+MAINT_GATE = f" and on(site_name, pool_name, environment) (cvs_maintenance_mode{{{F}}} == 0)"
 POOL_LEGEND = "{{site_name}} / {{pool_name}}"
 CAM_LEGEND = "{{site_name}} / {{pool_name}} / cam {{camera_id}}"
 OPS_LINK = {
@@ -164,7 +164,7 @@ panels.append(timeseries(
     y,
     [
         target(f"swimmer_count{{{SWF}}}", POOL_LEGEND, "A"),
-        target(f"(swimmer_count{{{SWF}}} == -1) and on(site_name, pool_name, environment) (cvs_maintenance_mode == 0)", "INTERRUPTED — " + POOL_LEGEND, "B"),
+        target(f"(swimmer_count{{{SWF}}} == -1) and on(site_name, pool_name, environment) (cvs_maintenance_mode{{{F}}} == 0)", "INTERRUPTED — " + POOL_LEGEND, "B"),
     ],
     unit="none", steps=None, calcs=["mean", "min", "lastNotNull"],
     overrides=[{
