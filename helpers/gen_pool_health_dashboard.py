@@ -13,6 +13,9 @@ SWF = F + ', pool_state=~"$pool_state", under_maintenance=~"$under_maintenance"'
 # pool_state/under_maintenance exist only on swimmer_count; other metrics get
 # those filters via this join (same convention as cvs_stability_metrics.json)
 SW_JOIN = f" and on(site_name, pool_name, environment) swimmer_count{{{SWF}}}"
+# excludes nightly restart / clean stops from the %-compliance gauges,
+# matching the swimmer-count gauge (which gets this via cvs:swimmer_valid:bool)
+MAINT_GATE = " and on(site_name, pool_name, environment) (cvs_maintenance_mode == 0)"
 POOL_LEGEND = "{{site_name}} / {{pool_name}}"
 CAM_LEGEND = "{{site_name}} / {{pool_name}} / cam {{camera_id}}"
 OPS_LINK = {
@@ -198,9 +201,9 @@ panels.append(timeseries(
 ))
 panels.append(bargauge(
     "% Time Detection FPS > 0.9 (per pool)",
-    "Percentage of the selected time range with detection_fps above 0.9.",
+    "Percentage of the selected time range with detection_fps above 0.9. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
     y,
-    pct(f"(detection_fps{{{F}}} > bool 0.9){SW_JOIN}"),
+    pct(f"(detection_fps{{{F}}} > bool 0.9){SW_JOIN}{MAINT_GATE}"),
     POOL_LEGEND,
 )); y += 10
 
@@ -215,9 +218,9 @@ panels.append(timeseries(
 ))
 panels.append(bargauge(
     "% Time Decision FPS > 0.9 (per pool)",
-    "Percentage of the selected time range with decisions_engine_fps above 0.9.",
+    "Percentage of the selected time range with decisions_engine_fps above 0.9. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
     y,
-    pct(f"(decisions_engine_fps{{{F}}} > bool 0.9){SW_JOIN}"),
+    pct(f"(decisions_engine_fps{{{F}}} > bool 0.9){SW_JOIN}{MAINT_GATE}"),
     POOL_LEGEND,
 )); y += 10
 
@@ -234,9 +237,9 @@ panels.append(timeseries(
 ))
 panels.append(bargauge(
     "% Time Frame Gap < 1s (per camera)",
-    "Percentage of the selected time range with max_time_between_frames below 1s, per camera.",
+    "Percentage of the selected time range with max_time_between_frames below 1s, per camera. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
     y,
-    pct(f"(max_time_between_frames{{{F}}} < bool 1){SW_JOIN}"),
+    pct(f"(max_time_between_frames{{{F}}} < bool 1){SW_JOIN}{MAINT_GATE}"),
     CAM_LEGEND,
 )); y += 10
 
@@ -254,9 +257,9 @@ panels.append(timeseries(
 panels.append(bargauge(
     "% Time Fuse Error <= 1.5 (per camera)",
     "Percentage of the selected time range with mean_fuse_error at or below 1.5, "
-    "per camera. The sentinel value 1.5 (insufficient overlap samples) counts as healthy.",
+    "per camera. The sentinel value 1.5 (insufficient overlap samples) counts as healthy. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
     y,
-    pct(f"(mean_fuse_error{{{F}}} <= bool 1.5){SW_JOIN}"),
+    pct(f"(mean_fuse_error{{{F}}} <= bool 1.5){SW_JOIN}{MAINT_GATE}"),
     CAM_LEGEND,
 )); y += 10
 

@@ -534,7 +534,7 @@
       "id": 6,
       "type": "bargauge",
       "title": "% Time Detection FPS > 0.9 (per pool)",
-      "description": "Percentage of the selected time range with detection_fps above 0.9.",
+      "description": "Percentage of the selected time range with detection_fps above 0.9. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -552,7 +552,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"})[$__range:]) * 100)",
+          "expr": "avg(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode == 0))[$__range:]) * 100)",
           "legendFormat": "OVERALL AVERAGE",
           "refId": "A",
           "instant": true
@@ -563,7 +563,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sort(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"})[$__range:]) * 100)",
+          "expr": "sort(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode == 0))[$__range:]) * 100)",
           "legendFormat": "{{site_name}} / {{pool_name}}",
           "refId": "B",
           "instant": true
@@ -739,7 +739,7 @@
       "id": 9,
       "type": "bargauge",
       "title": "% Time Decision FPS > 0.9 (per pool)",
-      "description": "Percentage of the selected time range with decisions_engine_fps above 0.9.",
+      "description": "Percentage of the selected time range with decisions_engine_fps above 0.9. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -757,7 +757,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"})[$__range:]) * 100)",
+          "expr": "avg(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode == 0))[$__range:]) * 100)",
           "legendFormat": "OVERALL AVERAGE",
           "refId": "A",
           "instant": true
@@ -768,7 +768,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sort(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"})[$__range:]) * 100)",
+          "expr": "sort(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode == 0))[$__range:]) * 100)",
           "legendFormat": "{{site_name}} / {{pool_name}}",
           "refId": "B",
           "instant": true
@@ -940,7 +940,7 @@
       "id": 12,
       "type": "bargauge",
       "title": "% Time Frame Gap < 1s (per camera)",
-      "description": "Percentage of the selected time range with max_time_between_frames below 1s, per camera.",
+      "description": "Percentage of the selected time range with max_time_between_frames below 1s, per camera. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -958,7 +958,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"})[$__range:]) * 100)",
+          "expr": "avg(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode == 0))[$__range:]) * 100)",
           "legendFormat": "OVERALL AVERAGE",
           "refId": "A",
           "instant": true
@@ -969,7 +969,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sort(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"})[$__range:]) * 100)",
+          "expr": "sort(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode == 0))[$__range:]) * 100)",
           "legendFormat": "{{site_name}} / {{pool_name}} / cam {{camera_id}}",
           "refId": "B",
           "instant": true
@@ -1141,7 +1141,7 @@
       "id": 15,
       "type": "bargauge",
       "title": "% Time Fuse Error <= 1.5 (per camera)",
-      "description": "Percentage of the selected time range with mean_fuse_error at or below 1.5, per camera. The sentinel value 1.5 (insufficient overlap samples) counts as healthy.",
+      "description": "Percentage of the selected time range with mean_fuse_error at or below 1.5, per camera. The sentinel value 1.5 (insufficient overlap samples) counts as healthy. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -1159,7 +1159,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"})[$__range:]) * 100)",
+          "expr": "avg(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode == 0))[$__range:]) * 100)",
           "legendFormat": "OVERALL AVERAGE",
           "refId": "A",
           "instant": true
@@ -1170,7 +1170,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sort(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"})[$__range:]) * 100)",
+          "expr": "sort(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode == 0))[$__range:]) * 100)",
           "legendFormat": "{{site_name}} / {{pool_name}} / cam {{camera_id}}",
           "refId": "B",
           "instant": true
