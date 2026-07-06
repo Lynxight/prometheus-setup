@@ -250,7 +250,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time((cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:1h]) * 100)",
+          "expr": "avg(avg_over_time((cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m]) * 100)",
           "legendFormat": "OVERALL AVERAGE",
           "instant": true,
           "refId": "A"
@@ -261,7 +261,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sort(avg_over_time((cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:1h]) * 100)",
+          "expr": "sort(avg_over_time((cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m]) * 100)",
           "legendFormat": "{{site_name}} / {{pool_name}}",
           "instant": true,
           "refId": "B"
@@ -438,7 +438,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(ceil(sum_over_time((changes(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[1h]) and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:1h]) / 2))",
+          "expr": "avg(ceil(sum_over_time((changes(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[5m]) and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m]) / 2))",
           "legendFormat": "OVERALL AVERAGE",
           "instant": true,
           "refId": "A"
@@ -449,7 +449,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sort_desc(ceil(sum_over_time((changes(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[1h]) and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:1h]) / 2))",
+          "expr": "sort_desc(ceil(sum_over_time((changes(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[5m]) and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m]) / 2))",
           "legendFormat": "{{site_name}} / {{pool_name}}",
           "instant": true,
           "refId": "B"
