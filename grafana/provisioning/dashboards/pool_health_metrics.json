@@ -486,7 +486,7 @@
             "lineInterpolation": "linear",
             "spanNulls": false,
             "thresholdsStyle": {
-              "mode": "line"
+              "mode": "line+area"
             }
           },
           "unit": "none",
@@ -495,11 +495,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
               },
               {
-                "color": "red",
+                "color": "yellow",
+                "value": 0.8
+              },
+              {
+                "color": "green",
                 "value": 0.9
               }
             ]
@@ -686,7 +690,7 @@
             "lineInterpolation": "linear",
             "spanNulls": false,
             "thresholdsStyle": {
-              "mode": "line"
+              "mode": "line+area"
             }
           },
           "unit": "none",
@@ -695,11 +699,15 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
               },
               {
-                "color": "red",
+                "color": "yellow",
+                "value": 0.8
+              },
+              {
+                "color": "green",
                 "value": 0.9
               }
             ]
@@ -886,7 +894,7 @@
             "lineInterpolation": "linear",
             "spanNulls": false,
             "thresholdsStyle": {
-              "mode": "line"
+              "mode": "line+area"
             }
           },
           "unit": "s",
@@ -1086,7 +1094,7 @@
             "lineInterpolation": "linear",
             "spanNulls": false,
             "thresholdsStyle": {
-              "mode": "line"
+              "mode": "line+area"
             }
           },
           "unit": "none",
