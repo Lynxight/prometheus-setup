@@ -466,7 +466,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"}",
+          "expr": "detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"}",
           "legendFormat": "{{site_name}} / {{pool_name}}",
           "refId": "A",
           "range": true
@@ -551,7 +551,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} > bool 0.9)[$__range:]) * 100)",
+          "expr": "avg(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"})[$__range:]) * 100)",
           "legendFormat": "OVERALL AVERAGE",
           "refId": "A",
           "instant": true
@@ -562,7 +562,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sort(avg_over_time((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} > bool 0.9)[$__range:]) * 100)",
+          "expr": "sort(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"})[$__range:]) * 100)",
           "legendFormat": "{{site_name}} / {{pool_name}}",
           "refId": "B",
           "instant": true
@@ -670,7 +670,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"}",
+          "expr": "decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"}",
           "legendFormat": "{{site_name}} / {{pool_name}}",
           "refId": "A",
           "range": true
@@ -755,7 +755,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} > bool 0.9)[$__range:]) * 100)",
+          "expr": "avg(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"})[$__range:]) * 100)",
           "legendFormat": "OVERALL AVERAGE",
           "refId": "A",
           "instant": true
@@ -766,7 +766,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sort(avg_over_time((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} > bool 0.9)[$__range:]) * 100)",
+          "expr": "sort(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"})[$__range:]) * 100)",
           "legendFormat": "{{site_name}} / {{pool_name}}",
           "refId": "B",
           "instant": true
@@ -874,7 +874,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"}",
+          "expr": "max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"}",
           "legendFormat": "{{site_name}} / {{pool_name}} / cam {{camera_id}}",
           "refId": "A",
           "range": true
@@ -955,7 +955,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} < bool 1)[$__range:]) * 100)",
+          "expr": "avg(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"})[$__range:]) * 100)",
           "legendFormat": "OVERALL AVERAGE",
           "refId": "A",
           "instant": true
@@ -966,7 +966,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sort(avg_over_time((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} < bool 1)[$__range:]) * 100)",
+          "expr": "sort(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"})[$__range:]) * 100)",
           "legendFormat": "{{site_name}} / {{pool_name}} / cam {{camera_id}}",
           "refId": "B",
           "instant": true
@@ -1056,7 +1056,7 @@
       "id": 14,
       "type": "timeseries",
       "title": "Mean Fuse Error per Camera (threshold 1.5)",
-      "description": "GTM multi-camera fuse error per camera. Healthy: < 1.5. A value of exactly 1.5 is a sentinel meaning not enough multi-camera track overlap to measure (counted as healthy).",
+      "description": "GTM multi-camera fuse error per camera. Healthy: <= 1.5. A value of exactly 1.5 is a sentinel meaning not enough multi-camera track overlap to measure and counts as healthy, so the red zone starts just above 1.5.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -1074,7 +1074,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"}",
+          "expr": "mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"}",
           "legendFormat": "{{site_name}} / {{pool_name}} / cam {{camera_id}}",
           "refId": "A",
           "range": true
@@ -1108,7 +1108,7 @@
               },
               {
                 "color": "red",
-                "value": 1.5
+                "value": 1.501
               }
             ]
           },
@@ -1155,7 +1155,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} <= bool 1.5)[$__range:]) * 100)",
+          "expr": "avg(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"})[$__range:]) * 100)",
           "legendFormat": "OVERALL AVERAGE",
           "refId": "A",
           "instant": true
@@ -1166,7 +1166,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sort(avg_over_time((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} <= bool 1.5)[$__range:]) * 100)",
+          "expr": "sort(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", group=~\"$deploy_group\", pool_state=~\"$pool_state\", under_maintenance=~\"$under_maintenance\"})[$__range:]) * 100)",
           "legendFormat": "{{site_name}} / {{pool_name}} / cam {{camera_id}}",
           "refId": "B",
           "instant": true
