@@ -18,6 +18,18 @@ SW_JOIN = f" and on(site_name, pool_name, environment) swimmer_count{{{SWF}}}"
 MAINT_GATE = f" and on(site_name, pool_name, environment) (cvs_maintenance_mode{{{F}}} == 0)"
 POOL_LEGEND = "{{site_name}} / {{pool_name}}"
 CAM_LEGEND = "{{site_name}} / {{pool_name}} / cam {{camera_id}}"
+
+
+def pct(cond_expr, rng="$__range:"):
+    return f"avg_over_time(({cond_expr})[{rng}]) * 100"
+
+
+SWIMMER_PCT = f"avg_over_time(cvs:swimmer_valid:bool{{{SWF}}}[$__range]) * 100"
+DETECTION_PCT = pct(f"(detection_fps{{{F}}} > bool 0.9){SW_JOIN}{MAINT_GATE}")
+DECISION_PCT = pct(f"(decisions_engine_fps{{{F}}} > bool 0.9){SW_JOIN}{MAINT_GATE}")
+FRAME_GAP_PCT = pct(f"(max_time_between_frames{{{F}}} < bool 1){SW_JOIN}{MAINT_GATE}")
+FUSE_ERROR_PCT = pct(f"(mean_fuse_error{{{F}}} <= bool 1.5){SW_JOIN}{MAINT_GATE}")
+
 OPS_LINK = {
     "title": "View in OPS Dashboard",
     "url": "/d/c2e10e40-2cbb-460d-91a0-83334f641194/ops-dashboard-per-site-support?var-site_name=${__field.labels.site_name}&var-server=${__field.labels.environment}&var-pool_name=${__field.labels.pool_name}&from=${__from}&to=${__to}",
@@ -85,7 +97,7 @@ def timeseries(title, desc, y, targets, unit, steps, calcs, overrides=None, min_
 
 
 def bargauge(title, desc, y, inner, legend):
-    """% of time `inner` (a bool expression body) held, per series + overall."""
+    """% of time `inner` (a bool expression body) held, per series, sorted."""
     return {
         "id": next(ids),
         "type": "bargauge",
@@ -94,8 +106,7 @@ def bargauge(title, desc, y, inner, legend):
         "datasource": DS,
         "gridPos": {"h": 10, "w": 10, "x": 14, "y": y},
         "targets": [
-            target(f"avg({inner})", "OVERALL AVERAGE", "A", instant=True),
-            target(f"sort({inner})", legend, "B", instant=True),
+            target(f"sort({inner})", legend, "A", instant=True),
         ],
         "fieldConfig": {
             "defaults": {
@@ -111,10 +122,7 @@ def bargauge(title, desc, y, inner, legend):
                 "max": 100,
                 "links": [OPS_LINK],
             },
-            "overrides": [{
-                "matcher": {"id": "byName", "options": "OVERALL AVERAGE"},
-                "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "white"}}],
-            }],
+            "overrides": [],
         },
         "options": {
             "orientation": "horizontal",
@@ -127,12 +135,59 @@ def bargauge(title, desc, y, inner, legend):
     }
 
 
-def pct(cond_expr, rng="$__range:"):
-    return f"avg_over_time(({cond_expr})[{rng}]) * 100"
+def go_no_go(y):
+    """Single status tile: GO only if every metric, across every currently
+    selected pool/camera, held within threshold >= 99% of the range."""
+    combined = (
+        "min("
+        f'label_replace(min({SWIMMER_PCT}), "metric", "swimmer_count", "", "")'
+        f' or label_replace(min({DETECTION_PCT}), "metric", "detection_fps", "", "")'
+        f' or label_replace(min({DECISION_PCT}), "metric", "decision_fps", "", "")'
+        f' or label_replace(min({FRAME_GAP_PCT}), "metric", "frame_gap", "", "")'
+        f' or label_replace(min({FUSE_ERROR_PCT}), "metric", "fuse_error", "", "")'
+        ")"
+    )
+    return {
+        "id": next(ids),
+        "type": "stat",
+        "title": "Pool Health Status",
+        "description": "GO only if every metric (swimmer count validity, "
+        "detection FPS > 0.9, decision FPS > 0.9, frame gap < 1s, fuse error "
+        "<= 1.5), across every currently selected pool/camera, held within "
+        "threshold at least 99% of the selected time range.",
+        "datasource": DS,
+        "gridPos": {"h": 4, "w": 24, "x": 0, "y": y},
+        "targets": [target(combined, "", "A", instant=True)],
+        "fieldConfig": {
+            "defaults": {
+                "color": {"mode": "thresholds"},
+                "thresholds": {"mode": "absolute", "steps": [
+                    {"color": "red", "value": None},
+                    {"color": "green", "value": 99},
+                ]},
+                "mappings": [
+                    {"type": "range", "options": {"from": 0, "to": 98.999999, "result": {"text": "NO-GO"}}},
+                    {"type": "range", "options": {"from": 99, "to": 100, "result": {"text": "GO"}}},
+                ],
+                "unit": "none",
+            },
+            "overrides": [],
+        },
+        "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "horizontal",
+            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False},
+            "textMode": "value",
+        },
+    }
 
 
 panels = []
 y = 0
+
+panels.append(go_no_go(y)); y += 4
 
 # --- Row 1: Swimmer Count ---
 panels.append(row("Swimmer Count", y)); y += 1
@@ -168,7 +223,7 @@ panels.append(bargauge(
     "are excluded from the calculation via the cvs:swimmer_valid:bool "
     "recording rule, matching the red marks on the graph.",
     y,
-    f"avg_over_time(cvs:swimmer_valid:bool{{{SWF}}}[$__range]) * 100",
+    SWIMMER_PCT,
     POOL_LEGEND,
 )); y += 10
 
@@ -185,7 +240,7 @@ panels.append(bargauge(
     "% Time Detection FPS > 0.9 (per pool)",
     "Percentage of the selected time range with detection_fps above 0.9. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
     y,
-    pct(f"(detection_fps{{{F}}} > bool 0.9){SW_JOIN}{MAINT_GATE}"),
+    DETECTION_PCT,
     POOL_LEGEND,
 )); y += 10
 
@@ -202,7 +257,7 @@ panels.append(bargauge(
     "% Time Decision FPS > 0.9 (per pool)",
     "Percentage of the selected time range with decisions_engine_fps above 0.9. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
     y,
-    pct(f"(decisions_engine_fps{{{F}}} > bool 0.9){SW_JOIN}{MAINT_GATE}"),
+    DECISION_PCT,
     POOL_LEGEND,
 )); y += 10
 
@@ -221,7 +276,7 @@ panels.append(bargauge(
     "% Time Frame Gap < 1s (per camera)",
     "Percentage of the selected time range with max_time_between_frames below 1s, per camera. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
     y,
-    pct(f"(max_time_between_frames{{{F}}} < bool 1){SW_JOIN}{MAINT_GATE}"),
+    FRAME_GAP_PCT,
     CAM_LEGEND,
 )); y += 10
 
@@ -241,17 +296,20 @@ panels.append(bargauge(
     "Percentage of the selected time range with mean_fuse_error at or below 1.5, "
     "per camera. The sentinel value 1.5 (insufficient overlap samples) counts as healthy. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
     y,
-    pct(f"(mean_fuse_error{{{F}}} <= bool 1.5){SW_JOIN}{MAINT_GATE}"),
+    FUSE_ERROR_PCT,
     CAM_LEGEND,
 )); y += 10
 
+# (name, label, query, multi, includeAll, refresh) — site_name/server are
+# single-select (multi=False), matching the "OPS Dashboard - Per Site
+# Support" convention: this dashboard is for looking at one site/pool.
 VAR_DEFS = [
-    ("under_maintenance", "Under Maintenance", "label_values(swimmer_count,under_maintenance)"),
-    ("pool_state", "Pool State", 'label_values(swimmer_count{under_maintenance=~"$under_maintenance"},pool_state)'),
-    ("deploy_group", "Deploy Group", 'label_values(swimmer_count{pool_state=~"$pool_state"},group)'),
-    ("server", "Server", 'label_values(swimmer_count{pool_state=~"$pool_state", group=~"$deploy_group"},environment)'),
-    ("site_name", "Site", 'label_values(swimmer_count{pool_state=~"$pool_state", environment=~"$server", group=~"$deploy_group"},site_name)'),
-    ("pool_name", "Pool", 'label_values(swimmer_count{pool_state=~"$pool_state", environment=~"$server", group=~"$deploy_group", site_name=~"$site_name"},pool_name)'),
+    ("under_maintenance", "Under Maintenance", "label_values(swimmer_count,under_maintenance)", True, True, 2),
+    ("pool_state", "Pool State", 'label_values(swimmer_count{under_maintenance=~"$under_maintenance"},pool_state)', True, True, 2),
+    ("deploy_group", "Deploy Group", 'label_values(swimmer_count{pool_state=~"$pool_state"},group)', True, True, 2),
+    ("server", "Server", 'label_values(swimmer_count{pool_state=~"$pool_state", group=~"$deploy_group"},environment)', False, True, 1),
+    ("site_name", "Site", 'label_values(swimmer_count{pool_state=~"$pool_state", environment=~"$server", group=~"$deploy_group"},site_name)', False, False, 1),
+    ("pool_name", "Pool", 'label_values(swimmer_count{pool_state=~"$pool_state", environment=~"$server", group=~"$deploy_group", site_name=~"$site_name"},pool_name)', True, True, 1),
 ]
 
 dashboard = {
@@ -281,14 +339,18 @@ dashboard = {
             "datasource": DS,
             "definition": query,
             "query": {"query": query, "refId": "StandardVariableQuery"},
-            "refresh": 2,
+            "refresh": refresh,
             "sort": 1,
-            "includeAll": True,
+            "includeAll": include_all,
             "allValue": ".*",
-            "multi": True,
-            "current": {"selected": True, "text": ["All"], "value": ["$__all"]},
+            "multi": multi,
+            "current": (
+                {"selected": True, "text": ["All"], "value": ["$__all"]}
+                if include_all else
+                {"selected": False, "text": "", "value": ""}
+            ),
         }
-        for name, label, query in VAR_DEFS
+        for name, label, query, multi, include_all, refresh in VAR_DEFS
     ]},
     "panels": panels,
 }
