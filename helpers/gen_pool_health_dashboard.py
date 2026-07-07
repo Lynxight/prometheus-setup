@@ -96,7 +96,9 @@ def timeseries(title, desc, y, targets, unit, steps, calcs, overrides=None, min_
 
 
 def bargauge(title, desc, y, inner, legend):
-    """% of time `inner` (a bool expression body) held, per series, sorted."""
+    """% of time `inner` (a bool expression body) held, per series + overall.
+    OVERALL AVERAGE uses the same continuous-RdYlGr gradient as the
+    per-series bars (previously fixed white, which read as inconsistent)."""
     return {
         "id": next(ids),
         "type": "bargauge",
@@ -105,7 +107,8 @@ def bargauge(title, desc, y, inner, legend):
         "datasource": DS,
         "gridPos": {"h": 10, "w": 10, "x": 14, "y": y},
         "targets": [
-            target(f"sort({inner})", legend, "A", instant=True),
+            target(f"avg({inner})", "OVERALL AVERAGE", "A", instant=True),
+            target(f"sort({inner})", legend, "B", instant=True),
         ],
         "fieldConfig": {
             "defaults": {
