@@ -116,14 +116,14 @@
       "id": 1,
       "type": "stat",
       "title": "Pool Health Status",
-      "description": "GO only if every metric (swimmer count validity, detection FPS > 0.9, decision FPS > 0.9, frame gap < 1s, fuse error <= 1.5), across every currently selected pool/camera, held within threshold at least 99% of the selected time range.",
+      "description": "GO only if every metric (swimmer count validity, detection FPS > 0.9, decision FPS > 0.9, frame gap < 1s, fuse error <= 1.5), across every currently selected pool/camera, held within threshold at least 99% of the selected time range. See the breakdown panel to the right for which metric caused a NO-GO.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
-        "h": 4,
-        "w": 24,
+        "h": 6,
+        "w": 8,
         "x": 0,
         "y": 0
       },
@@ -134,7 +134,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "min(label_replace(min(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[$__range]) * 100) or vector(0), \"metric\", \"swimmer_count\", \"\", \"\") or label_replace(min(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0), \"metric\", \"detection_fps\", \"\", \"\") or label_replace(min(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0), \"metric\", \"decision_fps\", \"\", \"\") or label_replace(min(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0), \"metric\", \"frame_gap\", \"\", \"\") or label_replace(min(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0), \"metric\", \"fuse_error\", \"\", \"\"))",
+          "expr": "min(label_replace(min(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[$__range]) * 100) or vector(0), \"metric\", \"Swimmer Count\", \"\", \"\") or label_replace(min(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0), \"metric\", \"Detection FPS\", \"\", \"\") or label_replace(min(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0), \"metric\", \"Decision FPS\", \"\", \"\") or label_replace(min(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0), \"metric\", \"Frame Gap\", \"\", \"\") or label_replace(min(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0), \"metric\", \"Fuse Error\", \"\", \"\"))",
           "legendFormat": "",
           "refId": "A",
           "instant": true
@@ -201,6 +201,74 @@
     },
     {
       "id": 2,
+      "type": "bargauge",
+      "title": "Why? Worst-Case % per Metric",
+      "description": "The minimum % of the selected range each metric held within threshold, across every currently selected pool/camera. Any red bar (below 99%) is what's driving the status above to NO-GO.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 16,
+        "x": 8,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "sort(label_replace(min(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[$__range]) * 100) or vector(0), \"metric\", \"Swimmer Count\", \"\", \"\") or label_replace(min(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0), \"metric\", \"Detection FPS\", \"\", \"\") or label_replace(min(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0), \"metric\", \"Decision FPS\", \"\", \"\") or label_replace(min(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0), \"metric\", \"Frame Gap\", \"\", \"\") or label_replace(min(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0), \"metric\", \"Fuse Error\", \"\", \"\"))",
+          "legendFormat": "{{metric}}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 99
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 2,
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "minVizWidth": 8,
+        "minVizHeight": 16
+      }
+    },
+    {
+      "id": 3,
       "type": "row",
       "title": "Swimmer Count",
       "collapsed": false,
@@ -208,12 +276,12 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 4
+        "y": 6
       },
       "panels": []
     },
     {
-      "id": 3,
+      "id": 4,
       "type": "timeseries",
       "title": "Swimmer Count (red marks = -1, excluding nightly restart)",
       "description": "Reported swimmer count per pool. Red points mark samples where the count is -1 (interrupted / invalid swimmer count) outside planned maintenance windows: the nightly restart and any other clean stop set cvs_maintenance_mode=1, which suppresses the red marks. The raw line still dips to -1 during those windows.",
@@ -225,7 +293,7 @@
         "h": 10,
         "w": 14,
         "x": 0,
-        "y": 5
+        "y": 7
       },
       "targets": [
         {
@@ -325,7 +393,7 @@
       }
     },
     {
-      "id": 4,
+      "id": 5,
       "type": "bargauge",
       "title": "% Time with Valid Swimmer Count (excluding nightly restart)",
       "description": "Percentage of the selected time range with a valid swimmer count (swimmer_count >= 0), per pool. Planned maintenance windows \u2014 the nightly restart and any other clean stop (cvs_maintenance_mode=1) \u2014 are excluded from the calculation via the cvs:swimmer_valid:bool recording rule, matching the red marks on the graph.",
@@ -337,7 +405,7 @@
         "h": 10,
         "w": 10,
         "x": 14,
-        "y": 5
+        "y": 7
       },
       "targets": [
         {
@@ -415,7 +483,7 @@
       }
     },
     {
-      "id": 5,
+      "id": 6,
       "type": "row",
       "title": "Detection FPS",
       "collapsed": false,
@@ -423,12 +491,12 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 15
+        "y": 17
       },
       "panels": []
     },
     {
-      "id": 6,
+      "id": 7,
       "type": "timeseries",
       "title": "Detection FPS (threshold 0.9)",
       "description": "Detection pipeline FPS per pool. Healthy: > 0.9 (target-normalized, ~1.0 when keeping up).",
@@ -440,7 +508,7 @@
         "h": 10,
         "w": 14,
         "x": 0,
-        "y": 16
+        "y": 18
       },
       "targets": [
         {
@@ -514,7 +582,7 @@
       }
     },
     {
-      "id": 7,
+      "id": 8,
       "type": "bargauge",
       "title": "% Time Detection FPS > 0.9 (per pool)",
       "description": "Percentage of the selected time range with detection_fps above 0.9. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
@@ -526,7 +594,7 @@
         "h": 10,
         "w": 10,
         "x": 14,
-        "y": 16
+        "y": 18
       },
       "targets": [
         {
@@ -604,7 +672,7 @@
       }
     },
     {
-      "id": 8,
+      "id": 9,
       "type": "row",
       "title": "Decision FPS",
       "collapsed": false,
@@ -612,12 +680,12 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 28
       },
       "panels": []
     },
     {
-      "id": 9,
+      "id": 10,
       "type": "timeseries",
       "title": "Decision FPS (threshold 0.9)",
       "description": "Decision engine FPS per pool. Healthy: > 0.9.",
@@ -629,7 +697,7 @@
         "h": 10,
         "w": 14,
         "x": 0,
-        "y": 27
+        "y": 29
       },
       "targets": [
         {
@@ -703,7 +771,7 @@
       }
     },
     {
-      "id": 10,
+      "id": 11,
       "type": "bargauge",
       "title": "% Time Decision FPS > 0.9 (per pool)",
       "description": "Percentage of the selected time range with decisions_engine_fps above 0.9. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
@@ -715,7 +783,7 @@
         "h": 10,
         "w": 10,
         "x": 14,
-        "y": 27
+        "y": 29
       },
       "targets": [
         {
@@ -793,7 +861,7 @@
       }
     },
     {
-      "id": 11,
+      "id": 12,
       "type": "row",
       "title": "Max Time Between Frames (per camera)",
       "collapsed": false,
@@ -801,12 +869,12 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 37
+        "y": 39
       },
       "panels": []
     },
     {
-      "id": 12,
+      "id": 13,
       "type": "timeseries",
       "title": "Max Time Between Frames per Camera (threshold 1s)",
       "description": "Largest gap between consecutive frame arrivals per camera (FrameSource, upstream of the Synchronizer). Healthy: < 1s. Simultaneous spikes on all cameras of a server indicate a host/network pause rather than a camera issue.",
@@ -818,7 +886,7 @@
         "h": 10,
         "w": 14,
         "x": 0,
-        "y": 38
+        "y": 40
       },
       "targets": [
         {
@@ -892,7 +960,7 @@
       }
     },
     {
-      "id": 13,
+      "id": 14,
       "type": "bargauge",
       "title": "% Time Frame Gap < 1s (per camera)",
       "description": "Percentage of the selected time range with max_time_between_frames below 1s, per camera. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
@@ -904,7 +972,7 @@
         "h": 10,
         "w": 10,
         "x": 14,
-        "y": 38
+        "y": 40
       },
       "targets": [
         {
@@ -982,7 +1050,7 @@
       }
     },
     {
-      "id": 14,
+      "id": 15,
       "type": "row",
       "title": "Mean Fuse Error (per camera)",
       "collapsed": false,
@@ -990,12 +1058,12 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 48
+        "y": 50
       },
       "panels": []
     },
     {
-      "id": 15,
+      "id": 16,
       "type": "timeseries",
       "title": "Mean Fuse Error per Camera (threshold 1.5)",
       "description": "GTM multi-camera fuse error per camera. Healthy: <= 1.5. A value of exactly 1.5 is a sentinel meaning not enough multi-camera track overlap to measure and counts as healthy, so the red zone starts just above 1.5.",
@@ -1007,7 +1075,7 @@
         "h": 10,
         "w": 14,
         "x": 0,
-        "y": 49
+        "y": 51
       },
       "targets": [
         {
@@ -1077,7 +1145,7 @@
       }
     },
     {
-      "id": 16,
+      "id": 17,
       "type": "bargauge",
       "title": "% Time Fuse Error <= 1.5 (per camera)",
       "description": "Percentage of the selected time range with mean_fuse_error at or below 1.5, per camera. The sentinel value 1.5 (insufficient overlap samples) counts as healthy. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
@@ -1089,7 +1157,7 @@
         "h": 10,
         "w": 10,
         "x": 14,
-        "y": 49
+        "y": 51
       },
       "targets": [
         {
