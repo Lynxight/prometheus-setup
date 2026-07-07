@@ -97,8 +97,9 @@ def timeseries(title, desc, y, targets, unit, steps, calcs, overrides=None, min_
 
 def bargauge(title, desc, y, inner, legend):
     """% of time `inner` (a bool expression body) held, per series + overall.
-    OVERALL AVERAGE uses the same continuous-RdYlGr gradient as the
-    per-series bars (previously fixed white, which read as inconsistent)."""
+    Solid red/green at the same 99% bar as the Go/No-Go status (not a
+    gradient) so a series dragging the site to NO-GO reads as unambiguously
+    red here too, instead of a middling gradient color."""
     return {
         "id": next(ids),
         "type": "bargauge",
@@ -112,11 +113,10 @@ def bargauge(title, desc, y, inner, legend):
         ],
         "fieldConfig": {
             "defaults": {
-                "color": {"mode": "continuous-RdYlGr"},
+                "color": {"mode": "thresholds"},
                 "thresholds": {"mode": "absolute", "steps": [
                     {"color": "red", "value": None},
-                    {"color": "yellow", "value": 80},
-                    {"color": "green", "value": 95},
+                    {"color": "green", "value": 99},
                 ]},
                 "unit": "percent",
                 "decimals": 1,
@@ -128,7 +128,7 @@ def bargauge(title, desc, y, inner, legend):
         },
         "options": {
             "orientation": "horizontal",
-            "displayMode": "gradient",
+            "displayMode": "basic",
             "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False},
             "showUnfilled": True,
             "minVizWidth": 8,
@@ -137,41 +137,33 @@ def bargauge(title, desc, y, inner, legend):
     }
 
 
-PER_METRIC = [
-    (SWIMMER_PCT, "Swimmer Count"),
-    (DETECTION_PCT, "Detection FPS"),
-    (DECISION_PCT, "Decision FPS"),
-    (FRAME_GAP_PCT, "Frame Gap"),
-    (FUSE_ERROR_PCT, "Fuse Error"),
-]
-# each per-metric min() falls back to `or vector(0)` so a metric that isn't
-# reporting at all (e.g. its service crashed and stopped emitting that
-# metric entirely) forces NO-GO / shows as a red 0% bar, instead of
-# silently dropping out of the union below
-METRIC_UNION = " or ".join(
-    f'label_replace(min({expr}) or vector(0), "metric", "{name}", "", "")'
-    for expr, name in PER_METRIC
-)
-
-
 def go_no_go(y):
-    """Status tile (GO only if every metric, across every currently
-    selected pool/camera, held within threshold >= 99% of the range) plus
-    a companion breakdown bargauge showing each metric's own worst-case %,
-    sorted worst-first, so a NO-GO doesn't require digging through the
-    per-metric rows below to find which one tripped it."""
-    status = {
+    """Single status tile: GO only if every metric, across every currently
+    selected pool/camera, held within threshold >= 99% of the range.
+    Each per-metric min() falls back to `or vector(0)` so a metric that
+    isn't reporting at all (e.g. its service crashed and stopped emitting
+    that metric entirely) forces NO-GO instead of silently dropping out of
+    the min() union and letting the remaining metrics show GO."""
+    combined = (
+        "min("
+        f'label_replace(min({SWIMMER_PCT}) or vector(0), "metric", "swimmer_count", "", "")'
+        f' or label_replace(min({DETECTION_PCT}) or vector(0), "metric", "detection_fps", "", "")'
+        f' or label_replace(min({DECISION_PCT}) or vector(0), "metric", "decision_fps", "", "")'
+        f' or label_replace(min({FRAME_GAP_PCT}) or vector(0), "metric", "frame_gap", "", "")'
+        f' or label_replace(min({FUSE_ERROR_PCT}) or vector(0), "metric", "fuse_error", "", "")'
+        ")"
+    )
+    return {
         "id": next(ids),
         "type": "stat",
         "title": "Pool Health Status",
         "description": "GO only if every metric (swimmer count validity, "
         "detection FPS > 0.9, decision FPS > 0.9, frame gap < 1s, fuse error "
         "<= 1.5), across every currently selected pool/camera, held within "
-        "threshold at least 99% of the selected time range. See the "
-        "breakdown panel to the right for which metric caused a NO-GO.",
+        "threshold at least 99% of the selected time range.",
         "datasource": DS,
-        "gridPos": {"h": 6, "w": 8, "x": 0, "y": y},
-        "targets": [target(f"min({METRIC_UNION})", "", "A", instant=True)],
+        "gridPos": {"h": 4, "w": 24, "x": 0, "y": y},
+        "targets": [target(combined, "", "A", instant=True)],
         "fieldConfig": {
             "defaults": {
                 "color": {"mode": "thresholds"},
@@ -196,46 +188,12 @@ def go_no_go(y):
             "textMode": "value",
         },
     }
-    breakdown = {
-        "id": next(ids),
-        "type": "bargauge",
-        "title": "Why? Worst-Case % per Metric",
-        "description": "The minimum % of the selected range each metric held "
-        "within threshold, across every currently selected pool/camera. Any "
-        "red bar (below 99%) is what's driving the status above to NO-GO.",
-        "datasource": DS,
-        "gridPos": {"h": 6, "w": 16, "x": 8, "y": y},
-        "targets": [target(f"sort({METRIC_UNION})", "{{metric}}", "A", instant=True)],
-        "fieldConfig": {
-            "defaults": {
-                "color": {"mode": "thresholds"},
-                "thresholds": {"mode": "absolute", "steps": [
-                    {"color": "red", "value": None},
-                    {"color": "green", "value": 99},
-                ]},
-                "unit": "percent",
-                "decimals": 2,
-                "min": 0,
-                "max": 100,
-            },
-            "overrides": [],
-        },
-        "options": {
-            "orientation": "horizontal",
-            "displayMode": "basic",
-            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False},
-            "showUnfilled": True,
-            "minVizWidth": 8,
-            "minVizHeight": 16,
-        },
-    }
-    return [status, breakdown]
 
 
 panels = []
 y = 0
 
-panels.extend(go_no_go(y)); y += 6
+panels.append(go_no_go(y)); y += 4
 
 # --- Row 1: Swimmer Count ---
 panels.append(row("Swimmer Count", y)); y += 1
