@@ -96,9 +96,10 @@ def timeseries(title, desc, y, targets, unit, steps, calcs, overrides=None, min_
 
 
 def bargauge(title, desc, y, inner, legend):
-    """% of time `inner` (a bool expression body) held, per series + overall.
-    Solid red/green at the same 99% bar as the Go/No-Go status (not a
-    gradient) so a series dragging the site to NO-GO reads as unambiguously
+    """`inner` is a 0-100 percentage expression (e.g. SWIMMER_PCT); renders
+    it per series + overall. Solid red/green at the same 99% bar as the
+    Go/No-Go status (not a gradient) so a series dragging the site to NO-GO
+    reads as unambiguously
     red here too, instead of a middling gradient color."""
     return {
         "id": next(ids),
@@ -307,10 +308,14 @@ panels.append(bargauge(
 )); y += 10
 
 # (name, label, query, multi, includeAll, refresh) — matches the "OPS
-# Dashboard - Per Site Support" convention exactly: this dashboard is for
-# looking at one site/pool, so site_name/server are single-select, and
-# site_name is independent and drives server/pool_name (pick a site, then
-# server/pool narrow to that site).
+# Dashboard - Per Site Support" convention for multi/includeAll and
+# dependency direction: this dashboard is for looking at one site/pool, so
+# site_name/server are single-select, and site_name is independent and
+# drives server/pool_name (pick a site, then server/pool narrow to that
+# site). Not an exact copy of that dashboard's own JSON in every detail —
+# e.g. its site_name `current` is a stale {"text": ["All"], ...} left over
+# from before includeAll was set to false there; ours defaults to empty
+# for any non-includeAll variable instead, which is the more correct state.
 VAR_DEFS = [
     ("site_name", "Site", "label_values(swimmer_count,site_name)", False, False, 1),
     ("server", "Server", 'label_values(swimmer_count{site_name=~"$site_name"},environment)', False, True, 1),
