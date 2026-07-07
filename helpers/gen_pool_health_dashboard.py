@@ -139,14 +139,18 @@ def bargauge(title, desc, y, inner, legend):
 
 def go_no_go(y):
     """Single status tile: GO only if every metric, across every currently
-    selected pool/camera, held within threshold >= 99% of the range."""
+    selected pool/camera, held within threshold >= 99% of the range.
+    Each per-metric min() falls back to `or vector(0)` so a metric that
+    isn't reporting at all (e.g. its service crashed and stopped emitting
+    that metric entirely) forces NO-GO instead of silently dropping out of
+    the min() union and letting the remaining metrics show GO."""
     combined = (
         "min("
-        f'label_replace(min({SWIMMER_PCT}), "metric", "swimmer_count", "", "")'
-        f' or label_replace(min({DETECTION_PCT}), "metric", "detection_fps", "", "")'
-        f' or label_replace(min({DECISION_PCT}), "metric", "decision_fps", "", "")'
-        f' or label_replace(min({FRAME_GAP_PCT}), "metric", "frame_gap", "", "")'
-        f' or label_replace(min({FUSE_ERROR_PCT}), "metric", "fuse_error", "", "")'
+        f'label_replace(min({SWIMMER_PCT}) or vector(0), "metric", "swimmer_count", "", "")'
+        f' or label_replace(min({DETECTION_PCT}) or vector(0), "metric", "detection_fps", "", "")'
+        f' or label_replace(min({DECISION_PCT}) or vector(0), "metric", "decision_fps", "", "")'
+        f' or label_replace(min({FRAME_GAP_PCT}) or vector(0), "metric", "frame_gap", "", "")'
+        f' or label_replace(min({FUSE_ERROR_PCT}) or vector(0), "metric", "fuse_error", "", "")'
         ")"
     )
     return {
