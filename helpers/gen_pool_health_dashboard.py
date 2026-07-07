@@ -8,11 +8,10 @@ import json
 import pathlib
 
 DS = {"type": "prometheus", "uid": "PBFA97CFB590B2093"}
-F = 'environment=~"$server", site_name=~"$site_name", pool_name=~"$pool_name", group=~"$deploy_group"'
-SWF = F + ', pool_state=~"$pool_state", under_maintenance=~"$under_maintenance"'
-# pool_state/under_maintenance exist only on swimmer_count; other metrics get
-# those filters via this join (same convention as cvs_stability_metrics.json)
-SW_JOIN = f" and on(site_name, pool_name, environment) swimmer_count{{{SWF}}}"
+F = 'environment=~"$server", site_name=~"$site_name", pool_name=~"$pool_name"'
+# other metrics get swimmer_count's presence via this join (same convention
+# as cvs_stability_metrics.json)
+SW_JOIN = f" and on(site_name, pool_name, environment) swimmer_count{{{F}}}"
 # excludes nightly restart / clean stops from the %-compliance gauges,
 # matching the swimmer-count gauge (which gets this via cvs:swimmer_valid:bool)
 MAINT_GATE = f" and on(site_name, pool_name, environment) (cvs_maintenance_mode{{{F}}} == 0)"
@@ -24,7 +23,7 @@ def pct(cond_expr, rng="$__range:"):
     return f"avg_over_time(({cond_expr})[{rng}]) * 100"
 
 
-SWIMMER_PCT = f"avg_over_time(cvs:swimmer_valid:bool{{{SWF}}}[$__range]) * 100"
+SWIMMER_PCT = f"avg_over_time(cvs:swimmer_valid:bool{{{F}}}[$__range]) * 100"
 DETECTION_PCT = pct(f"(detection_fps{{{F}}} > bool 0.9){SW_JOIN}{MAINT_GATE}")
 DECISION_PCT = pct(f"(decisions_engine_fps{{{F}}} > bool 0.9){SW_JOIN}{MAINT_GATE}")
 FRAME_GAP_PCT = pct(f"(max_time_between_frames{{{F}}} < bool 1){SW_JOIN}{MAINT_GATE}")
@@ -200,8 +199,8 @@ panels.append(timeseries(
     "still dips to -1 during those windows.",
     y,
     [
-        target(f"swimmer_count{{{SWF}}}", POOL_LEGEND, "A"),
-        target(f"(swimmer_count{{{SWF}}} == -1) and on(site_name, pool_name, environment) (cvs_maintenance_mode{{{F}}} == 0)", "INTERRUPTED — " + POOL_LEGEND, "B"),
+        target(f"swimmer_count{{{F}}}", POOL_LEGEND, "A"),
+        target(f"(swimmer_count{{{F}}} == -1) and on(site_name, pool_name, environment) (cvs_maintenance_mode{{{F}}} == 0)", "INTERRUPTED — " + POOL_LEGEND, "B"),
     ],
     unit="none", steps=None, calcs=["mean", "min", "lastNotNull"],
     overrides=[{
@@ -300,19 +299,15 @@ panels.append(bargauge(
     CAM_LEGEND,
 )); y += 10
 
-# (name, label, query, multi, includeAll, refresh) — site_name/server are
-# single-select (multi=False), matching the "OPS Dashboard - Per Site
-# Support" convention: this dashboard is for looking at one site/pool.
-# site_name is independent and drives server/pool_name (not the other way
-# around), same dependency direction as that dashboard: pick a site, then
-# server/pool narrow to that site.
+# (name, label, query, multi, includeAll, refresh) — matches the "OPS
+# Dashboard - Per Site Support" convention exactly: this dashboard is for
+# looking at one site/pool, so site_name/server are single-select, and
+# site_name is independent and drives server/pool_name (pick a site, then
+# server/pool narrow to that site).
 VAR_DEFS = [
-    ("under_maintenance", "Under Maintenance", "label_values(swimmer_count,under_maintenance)", True, True, 2),
-    ("pool_state", "Pool State", 'label_values(swimmer_count{under_maintenance=~"$under_maintenance"},pool_state)', True, True, 2),
-    ("deploy_group", "Deploy Group", 'label_values(swimmer_count{pool_state=~"$pool_state"},group)', True, True, 2),
     ("site_name", "Site", "label_values(swimmer_count,site_name)", False, False, 1),
-    ("server", "Server", 'label_values(swimmer_count{site_name=~"$site_name", pool_state=~"$pool_state", group=~"$deploy_group"},environment)', False, True, 1),
-    ("pool_name", "Pool", 'label_values(swimmer_count{site_name=~"$site_name", pool_state=~"$pool_state", group=~"$deploy_group"},pool_name)', True, True, 1),
+    ("server", "Server", 'label_values(swimmer_count{site_name=~"$site_name"},environment)', False, True, 1),
+    ("pool_name", "Pool", 'label_values(swimmer_count{site_name=~"$site_name"},pool_name)', True, True, 1),
 ]
 
 dashboard = {
