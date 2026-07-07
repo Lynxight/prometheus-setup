@@ -303,13 +303,16 @@ panels.append(bargauge(
 # (name, label, query, multi, includeAll, refresh) — site_name/server are
 # single-select (multi=False), matching the "OPS Dashboard - Per Site
 # Support" convention: this dashboard is for looking at one site/pool.
+# site_name is independent and drives server/pool_name (not the other way
+# around), same dependency direction as that dashboard: pick a site, then
+# server/pool narrow to that site.
 VAR_DEFS = [
     ("under_maintenance", "Under Maintenance", "label_values(swimmer_count,under_maintenance)", True, True, 2),
     ("pool_state", "Pool State", 'label_values(swimmer_count{under_maintenance=~"$under_maintenance"},pool_state)', True, True, 2),
     ("deploy_group", "Deploy Group", 'label_values(swimmer_count{pool_state=~"$pool_state"},group)', True, True, 2),
-    ("server", "Server", 'label_values(swimmer_count{pool_state=~"$pool_state", group=~"$deploy_group"},environment)', False, True, 1),
-    ("site_name", "Site", 'label_values(swimmer_count{pool_state=~"$pool_state", environment=~"$server", group=~"$deploy_group"},site_name)', False, False, 1),
-    ("pool_name", "Pool", 'label_values(swimmer_count{pool_state=~"$pool_state", environment=~"$server", group=~"$deploy_group", site_name=~"$site_name"},pool_name)', True, True, 1),
+    ("site_name", "Site", "label_values(swimmer_count,site_name)", False, False, 1),
+    ("server", "Server", 'label_values(swimmer_count{site_name=~"$site_name", pool_state=~"$pool_state", group=~"$deploy_group"},environment)', False, True, 1),
+    ("pool_name", "Pool", 'label_values(swimmer_count{site_name=~"$site_name", pool_state=~"$pool_state", group=~"$deploy_group"},pool_name)', True, True, 1),
 ]
 
 dashboard = {

@@ -114,6 +114,30 @@
         }
       },
       {
+        "name": "site_name",
+        "type": "query",
+        "label": "Site",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "definition": "label_values(swimmer_count,site_name)",
+        "query": {
+          "query": "label_values(swimmer_count,site_name)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "sort": 1,
+        "includeAll": false,
+        "allValue": ".*",
+        "multi": false,
+        "current": {
+          "selected": false,
+          "text": "",
+          "value": ""
+        }
+      },
+      {
         "name": "server",
         "type": "query",
         "label": "Server",
@@ -121,9 +145,9 @@
           "type": "prometheus",
           "uid": "PBFA97CFB590B2093"
         },
-        "definition": "label_values(swimmer_count{pool_state=~\"$pool_state\", group=~\"$deploy_group\"},environment)",
+        "definition": "label_values(swimmer_count{site_name=~\"$site_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\"},environment)",
         "query": {
-          "query": "label_values(swimmer_count{pool_state=~\"$pool_state\", group=~\"$deploy_group\"},environment)",
+          "query": "label_values(swimmer_count{site_name=~\"$site_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\"},environment)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
@@ -142,30 +166,6 @@
         }
       },
       {
-        "name": "site_name",
-        "type": "query",
-        "label": "Site",
-        "datasource": {
-          "type": "prometheus",
-          "uid": "PBFA97CFB590B2093"
-        },
-        "definition": "label_values(swimmer_count{pool_state=~\"$pool_state\", environment=~\"$server\", group=~\"$deploy_group\"},site_name)",
-        "query": {
-          "query": "label_values(swimmer_count{pool_state=~\"$pool_state\", environment=~\"$server\", group=~\"$deploy_group\"},site_name)",
-          "refId": "StandardVariableQuery"
-        },
-        "refresh": 1,
-        "sort": 1,
-        "includeAll": false,
-        "allValue": ".*",
-        "multi": false,
-        "current": {
-          "selected": false,
-          "text": "",
-          "value": ""
-        }
-      },
-      {
         "name": "pool_name",
         "type": "query",
         "label": "Pool",
@@ -173,9 +173,9 @@
           "type": "prometheus",
           "uid": "PBFA97CFB590B2093"
         },
-        "definition": "label_values(swimmer_count{pool_state=~\"$pool_state\", environment=~\"$server\", group=~\"$deploy_group\", site_name=~\"$site_name\"},pool_name)",
+        "definition": "label_values(swimmer_count{site_name=~\"$site_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\"},pool_name)",
         "query": {
-          "query": "label_values(swimmer_count{pool_state=~\"$pool_state\", environment=~\"$server\", group=~\"$deploy_group\", site_name=~\"$site_name\"},pool_name)",
+          "query": "label_values(swimmer_count{site_name=~\"$site_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\"},pool_name)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
