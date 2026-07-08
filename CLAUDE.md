@@ -30,3 +30,15 @@ Follow the naming convention `helpers/gen_<name>.py` → `<name>.json`.
 | Dashboard JSON | Generator |
 |----------------|-----------|
 | `grafana/provisioning/dashboards/pool_health_metrics.json` | `helpers/gen_pool_health_dashboard.py` |
+
+### Enforcement
+
+`helpers/check_generated_dashboards.py` re-runs every generator and fails if a
+committed dashboard has drifted from its generator's output (or references a
+generator that no longer exists). CI runs it on every PR
+(`.github/workflows/check-generated-dashboards.yml`). To catch drift locally
+before you push, install the commit hook once per clone:
+
+```bash
+pip install pre-commit && pre-commit install
+```

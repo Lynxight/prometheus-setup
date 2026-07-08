@@ -1,0 +1,13 @@
+# Local commit-time guardrails. Enable once per clone:
+#   pip install pre-commit && pre-commit install
+# Then generated dashboards are verified on every commit (CI enforces the
+# same check on PRs regardless, via .github/workflows/check-generated-dashboards.yml).
+repos:
+  - repo: local
+    hooks:
+      - id: check-generated-dashboards
+        name: generated dashboards in sync with their generators
+        entry: python3 helpers/check_generated_dashboards.py
+        language: system
+        pass_filenames: false
+        files: '^(helpers/gen_.*\.py|grafana/provisioning/dashboards/.*\.json)$'

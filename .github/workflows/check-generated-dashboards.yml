@@ -1,0 +1,25 @@
+name: check-generated-dashboards
+
+# Fail a PR when a committed dashboard JSON has drifted from its generator
+# (hand-edited, or generator changed without re-running it).
+on:
+  pull_request:
+    paths:
+      - "helpers/gen_*.py"
+      - "helpers/check_generated_dashboards.py"
+      - "grafana/provisioning/dashboards/**"
+      - ".github/workflows/check-generated-dashboards.yml"
+  push:
+    branches: [master]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      # Generators are stdlib-only, so no dependency install step is needed.
+      - name: Verify generated dashboards are in sync
+        run: python3 helpers/check_generated_dashboards.py
