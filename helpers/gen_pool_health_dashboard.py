@@ -15,8 +15,10 @@ SW_JOIN = f" and on(site_name, pool_name, environment) swimmer_count{{{F}}}"
 # excludes nightly restart / clean stops from the %-compliance gauges,
 # matching the swimmer-count gauge (which gets this via cvs:swimmer_valid:bool)
 MAINT_GATE = f" and on(site_name, pool_name, environment) (cvs_maintenance_mode{{{F}}} == 0)"
-POOL_LEGEND = "{{site_name}} / {{pool_name}}"
-CAM_LEGEND = "{{site_name}} / {{pool_name}} / cam {{camera_id}}"
+# site_name is fixed by the $site_name template var (one site per dashboard
+# view), so it's dropped from legends to keep them short.
+POOL_LEGEND = "{{pool_name}}"
+CAM_LEGEND = "{{pool_name}} C{{camera_id}}"
 
 
 def pct(cond_expr, rng="$__range:"):
@@ -97,7 +99,7 @@ def timeseries(title, desc, y, targets, unit, steps, calcs, overrides=None, min_
 
 def bargauge(title, desc, y, inner, legend):
     """`inner` is a 0-100 percentage expression (e.g. SWIMMER_PCT); renders
-    it per series + overall. Solid red/green at the same 99% bar as the
+    it per series. Solid red/green at the same 99% bar as the
     Go/No-Go status (not a gradient) so a series dragging the site to NO-GO
     reads as unambiguously
     red here too, instead of a middling gradient color."""
@@ -109,8 +111,9 @@ def bargauge(title, desc, y, inner, legend):
         "datasource": DS,
         "gridPos": {"h": 10, "w": 10, "x": 14, "y": y},
         "targets": [
-            target(f"avg({inner})", "OVERALL AVERAGE", "A", instant=True),
-            target(f"sort({inner})", legend, "B", instant=True),
+            # only the per-series value is shown — the 99% threshold conditions
+            # on each series, not on the overall average.
+            target(f"sort({inner})", legend, "A", instant=True),
         ],
         "fieldConfig": {
             "defaults": {

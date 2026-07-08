@@ -235,7 +235,7 @@
           },
           "editorMode": "code",
           "expr": "swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}",
-          "legendFormat": "{{site_name}} / {{pool_name}}",
+          "legendFormat": "{{pool_name}}",
           "refId": "A",
           "range": true
         },
@@ -246,7 +246,7 @@
           },
           "editorMode": "code",
           "expr": "(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == -1) and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0)",
-          "legendFormat": "INTERRUPTED \u2014 {{site_name}} / {{pool_name}}",
+          "legendFormat": "INTERRUPTED \u2014 {{pool_name}}",
           "refId": "B",
           "range": true
         }
@@ -346,20 +346,9 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[$__range]) * 100)",
-          "legendFormat": "OVERALL AVERAGE",
-          "refId": "A",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
           "expr": "sort(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[$__range]) * 100)",
-          "legendFormat": "{{site_name}} / {{pool_name}}",
-          "refId": "B",
+          "legendFormat": "{{pool_name}}",
+          "refId": "A",
           "instant": true
         }
       ],
@@ -446,7 +435,7 @@
           },
           "editorMode": "code",
           "expr": "detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}",
-          "legendFormat": "{{site_name}} / {{pool_name}}",
+          "legendFormat": "{{pool_name}}",
           "refId": "A",
           "range": true
         }
@@ -531,20 +520,9 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100)",
-          "legendFormat": "OVERALL AVERAGE",
-          "refId": "A",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
           "expr": "sort(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100)",
-          "legendFormat": "{{site_name}} / {{pool_name}}",
-          "refId": "B",
+          "legendFormat": "{{pool_name}}",
+          "refId": "A",
           "instant": true
         }
       ],
@@ -631,7 +609,7 @@
           },
           "editorMode": "code",
           "expr": "decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}",
-          "legendFormat": "{{site_name}} / {{pool_name}}",
+          "legendFormat": "{{pool_name}}",
           "refId": "A",
           "range": true
         }
@@ -716,20 +694,9 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100)",
-          "legendFormat": "OVERALL AVERAGE",
-          "refId": "A",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
           "expr": "sort(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100)",
-          "legendFormat": "{{site_name}} / {{pool_name}}",
-          "refId": "B",
+          "legendFormat": "{{pool_name}}",
+          "refId": "A",
           "instant": true
         }
       ],
@@ -816,7 +783,7 @@
           },
           "editorMode": "code",
           "expr": "max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}",
-          "legendFormat": "{{site_name}} / {{pool_name}} / cam {{camera_id}}",
+          "legendFormat": "{{pool_name}} C{{camera_id}}",
           "refId": "A",
           "range": true
         }
@@ -901,20 +868,9 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100)",
-          "legendFormat": "OVERALL AVERAGE",
-          "refId": "A",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
           "expr": "sort(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100)",
-          "legendFormat": "{{site_name}} / {{pool_name}} / cam {{camera_id}}",
-          "refId": "B",
+          "legendFormat": "{{pool_name}} C{{camera_id}}",
+          "refId": "A",
           "instant": true
         }
       ],
@@ -1001,7 +957,7 @@
           },
           "editorMode": "code",
           "expr": "mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}",
-          "legendFormat": "{{site_name}} / {{pool_name}} / cam {{camera_id}}",
+          "legendFormat": "{{pool_name}} C{{camera_id}}",
           "refId": "A",
           "range": true
         }
@@ -1082,20 +1038,9 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100)",
-          "legendFormat": "OVERALL AVERAGE",
-          "refId": "A",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
           "expr": "sort(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100)",
-          "legendFormat": "{{site_name}} / {{pool_name}} / cam {{camera_id}}",
-          "refId": "B",
+          "legendFormat": "{{pool_name}} C{{camera_id}}",
+          "refId": "A",
           "instant": true
         }
       ],
