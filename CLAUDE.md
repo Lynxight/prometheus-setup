@@ -9,8 +9,8 @@ stack runs on a dedicated EC2 that applies these files manually. See
 ## Generated dashboards — check before you edit
 
 Some dashboards under `grafana/provisioning/dashboards/*.json` are **generated
-by a script** and must not be hand-edited — a hand edit is silently clobbered
-the next time the generator runs.
+by a script** and must not be hand-edited — any hand edit is silently
+clobbered the next time the generator runs.
 
 **Before editing any dashboard JSON:** look at the top of the file for a
 `"__generated_by"` key.

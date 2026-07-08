@@ -45,11 +45,19 @@ def main() -> int:
     to_run = {g.relative_to(REPO_ROOT).as_posix()
               for g in HELPERS.glob("gen_*.py")}
 
+    # Committed dashboard name -> its generator, so we can later catch a
+    # generator that stops producing that filename (renamed output / stale file).
+    marked = {}
     for p in sorted(DASH_DIR.glob("*.json")):
         try:
-            marker = json.loads(p.read_text()).get("__generated_by")
-        except (json.JSONDecodeError, OSError):
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except OSError as e:
+            problems.append(f"{p.name}: cannot read ({e})")
             continue
+        except json.JSONDecodeError as e:
+            problems.append(f"{p.name}: invalid JSON ({e})")
+            continue
+        marker = data.get("__generated_by") if isinstance(data, dict) else None
         if not marker:
             continue
         # A marker is committed data, so a bad one is a defect to report — never
@@ -65,6 +73,7 @@ def main() -> int:
             problems.append(f"{p.name}: references missing generator '{marker}'")
         else:
             to_run.add(target.relative_to(REPO_ROOT).as_posix())
+            marked[p.name] = marker
 
     generators = sorted(to_run)
 
@@ -77,11 +86,14 @@ def main() -> int:
                                       cwd=REPO_ROOT, env=env,
                                       capture_output=True, text=True)
                 if proc.returncode != 0:
-                    print(f"ERROR: generator crashed: python3 {rel}")
-                    if proc.stderr.strip():
-                        print(proc.stderr.strip())
+                    print(f"ERROR: generator crashed (exit {proc.returncode}): "
+                          f"python3 {rel}")
+                    output = (proc.stdout + proc.stderr).strip()
+                    if output:
+                        print(output)
                     return 2
 
+            produced_names = {q.name for q in pathlib.Path(tmp).glob("*.json")}
             for produced in sorted(pathlib.Path(tmp).glob("*.json")):
                 committed = DASH_DIR / produced.name
                 rel = committed.relative_to(REPO_ROOT).as_posix()
@@ -89,6 +101,16 @@ def main() -> int:
                     problems.append(f"{rel}: generator produces this file but it is missing (deleted?)")
                 elif committed.read_bytes() != produced.read_bytes():
                     problems.append(f"{rel}: file does not match its generator's output")
+
+            # A committed dashboard that still claims a generator, but which no
+            # generator produced this run, is stale — e.g. the generator was
+            # changed to emit a different filename, leaving this one behind.
+            for name, marker in sorted(marked.items()):
+                if name not in produced_names:
+                    problems.append(
+                        f"{name}: claims generator '{marker}', but it no longer "
+                        f"produces this file (renamed output? stale file?)"
+                    )
 
     if problems:
         print("ERROR: generated dashboard(s) out of sync with their generator:")

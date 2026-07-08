@@ -384,7 +384,7 @@ out_dir = pathlib.Path(
 )
 out_dir.mkdir(parents=True, exist_ok=True)
 out = str(out_dir / "pool_health_metrics.json")
-with open(out, "w") as f:
+with open(out, "w", encoding="utf-8") as f:
     json.dump(dashboard, f, indent=2)
     f.write("\n")
 print("wrote", out)
