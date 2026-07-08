@@ -256,7 +256,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time((cvs:software_up:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment) swimmer_count{pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:1m]) * 100)",
+          "expr": "avg(avg_over_time((cvs:software_up:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment) swimmer_count{pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m]) * 100)",
           "legendFormat": "OVERALL AVERAGE",
           "instant": true,
           "refId": "A"
@@ -267,7 +267,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sort(avg_over_time((cvs:software_up:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment) swimmer_count{pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:1m]) * 100)",
+          "expr": "sort(avg_over_time((cvs:software_up:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment) swimmer_count{pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m]) * 100)",
           "legendFormat": "{{site_name}} / {{pool_name}}",
           "instant": true,
           "refId": "B"

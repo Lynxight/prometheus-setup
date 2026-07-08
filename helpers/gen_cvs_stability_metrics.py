@@ -238,12 +238,14 @@ def exc_table(pid, title, desc, y, expr, extra_hidden, index_by):
 
 # --- Percentage expressions (bargauge inner / daily trend) ---
 
-# % software uptime per pool: every camera producing frames. 1m subquery step
-# (vs validity's 5m) because actual_fps reports on a 60s window, so shorter
-# camera outages register.
+# % software uptime per pool: every camera producing frames. 5m subquery step
+# to match the validity panels — 1m over a 30d range exceeds Prometheus's
+# query sample limit ("would load too many samples into memory"). The rule
+# still evaluates every 15s; 5m sampling of the bool only costs precision on
+# sub-5m outages, negligible in a long-range average.
 UP_PCT = (f"avg_over_time((cvs:software_up:bool{{{POOL}}}{SW_GATE}"
           f"{version_gate('pool_name, site_name, environment')})"
-          f"[$__range:1m]) * 100")
+          f"[$__range:5m]) * 100")
 UP_DAILY = (f"avg(avg_over_time(cvs:software_up:bool{{{POOL}}}[1d]) * 100"
             f"{SW_GATE.replace('on(pool_name, site_name, environment)', 'on(pool_name, site_name)')}"
             f"{version_gate('pool_name, site_name')})")
