@@ -5,6 +5,7 @@ The dashboard JSON is generated — edit this script and re-run it instead of
 editing the JSON by hand.
 """
 import json
+import os
 import pathlib
 
 DS = {"type": "prometheus", "uid": "PBFA97CFB590B2093"}
@@ -325,7 +326,17 @@ VAR_DEFS = [
     ("pool_name", "Pool", 'label_values(swimmer_count{site_name=~"$site_name"},pool_name)', True, True, 1),
 ]
 
+# Paths derived from this file's location so the marker + output path track
+# the script if it's renamed or moved, instead of being hardcoded.
+REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
+GENERATOR_REL = pathlib.Path(__file__).resolve().relative_to(REPO_ROOT).as_posix()
+
 dashboard = {
+    "__generated_by": GENERATOR_REL,
+    "__generated_warning": (
+        "GENERATED FILE — do not edit by hand. Edit the generator and re-run: "
+        f"python3 {GENERATOR_REL}"
+    ),
     "__inputs": [],
     "__requires": [
         {"type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0"}
@@ -368,8 +379,15 @@ dashboard = {
     "panels": panels,
 }
 
-out = str(pathlib.Path(__file__).resolve().parent.parent / "grafana/provisioning/dashboards/pool_health_metrics.json")
-with open(out, "w") as f:
+# Output dir is overridable via DASHBOARD_OUT_DIR so tooling
+# (helpers/check_generated_dashboards.py) can regenerate into a temp dir to
+# compare, without touching the committed file.
+out_dir = pathlib.Path(
+    os.environ.get("DASHBOARD_OUT_DIR", REPO_ROOT / "grafana/provisioning/dashboards")
+)
+out_dir.mkdir(parents=True, exist_ok=True)
+out = str(out_dir / "pool_health_metrics.json")
+with open(out, "w", encoding="utf-8") as f:
     json.dump(dashboard, f, indent=2)
     f.write("\n")
 print("wrote", out)

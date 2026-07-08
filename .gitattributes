@@ -4,6 +4,13 @@
 * text eol=lf
 
 ###############################################################################
+# Generated dashboards — do NOT hand-edit; regenerate via the matching
+# helpers/gen_*.py (look for "__generated_by" at the top of the JSON).
+# linguist-generated collapses the diff and labels it "generated" in PRs.
+###############################################################################
+grafana/provisioning/dashboards/pool_health_metrics.json linguist-generated=true
+
+###############################################################################
 # Set default behavior for command prompt diff.
 #
 # This is need for earlier builds of msysgit that does not have it on by
