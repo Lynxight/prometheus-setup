@@ -1,4 +1,6 @@
 {
+  "__generated_by": "helpers/gen_cvs_stability_metrics.py",
+  "__generated_warning": "GENERATED FILE \u2014 do not edit by hand. Edit the generator and re-run: python3 helpers/gen_cvs_stability_metrics.py",
   "__inputs": [],
   "__requires": [
     {
@@ -11,7 +13,7 @@
   "id": null,
   "uid": "cvs-stability-metrics",
   "title": "CVS Stability Metrics",
-  "description": "Monitor swimmer count validity, incidents, and algo container exceptions",
+  "description": "Monitor software uptime, swimmer count validity, incidents, and algo container exceptions",
   "tags": [
     "cvs",
     "stability",
@@ -210,12 +212,204 @@
           "value": "-1"
         },
         "options": [
-          { "selected": true, "text": "-1", "value": "-1" }
+          {
+            "selected": true,
+            "text": "-1",
+            "value": "-1"
+          }
         ]
       }
     ]
   },
   "panels": [
+    {
+      "id": 16,
+      "type": "row",
+      "title": "Software Uptime",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false
+    },
+    {
+      "id": 17,
+      "type": "bargauge",
+      "title": "% Software Uptime (per pool, excluding nightly restart)",
+      "description": "Percentage of time every camera on the pool was producing frames (per-pool min of actual_fps > 0.5, via the cvs:software_up:bool recording rule) over the selected time range. Any single dead camera counts the whole pool as down. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded. Isolates 'basic plumbing is working' from swimmer count validity, which also depends on the algo pipeline.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "avg(avg_over_time((cvs:software_up:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment) swimmer_count{pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:1m]) * 100)",
+          "legendFormat": "OVERALL AVERAGE",
+          "instant": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "sort(avg_over_time((cvs:software_up:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment) swimmer_count{pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:1m]) * 100)",
+          "legendFormat": "{{site_name}} / {{pool_name}}",
+          "instant": true,
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-RdYlGr"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 80
+              },
+              {
+                "color": "green",
+                "value": 95
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "links": [
+            {
+              "title": "View in OPS Dashboard",
+              "url": "/d/c2e10e40-2cbb-460d-91a0-83334f641194/ops-dashboard-per-site-support?var-site_name=${__field.labels.site_name}&var-server=${__field.labels.environment}&var-pool_name=${__field.labels.pool_name}&from=${__from}&to=${__to}",
+              "targetBlank": true
+            }
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "OVERALL AVERAGE"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "white"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "minVizWidth": 8,
+        "minVizHeight": 16
+      }
+    },
+    {
+      "id": 18,
+      "type": "timeseries",
+      "title": "Daily Trend: Software Uptime % (overall avg)",
+      "description": "Daily overall average of software uptime percentage (every camera on the pool producing frames).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "avg(avg_over_time(cvs:software_up:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[1d]) * 100 and on(pool_name, site_name) swimmer_count{pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))",
+          "legendFormat": "Software Uptime %",
+          "range": true,
+          "interval": "1d",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "pointSize": 8,
+            "showPoints": "always",
+            "lineInterpolation": "linear"
+          },
+          "unit": "percent",
+          "links": [
+            {
+              "title": "View video_stream logs in Elasticsearch",
+              "url": "https://lynxight-log-prod.kb.eu-central-1.aws.cloud.es.io/app/discover#/?_g=(time:(from:'${__from:date:iso}',to:'${__to:date:iso}'))&_a=(query:(language:lucene,query:'container.labels.com_docker_compose_service:video_stream'))",
+              "targetBlank": true
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
     {
       "id": 1,
       "type": "row",
@@ -224,7 +418,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 11
       },
       "collapsed": false
     },
@@ -241,7 +435,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 1
+        "y": 12
       },
       "targets": [
         {
@@ -347,7 +541,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 1
+        "y": 12
       },
       "targets": [
         {
@@ -412,7 +606,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 11
+        "y": 22
       },
       "collapsed": false
     },
@@ -429,7 +623,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 12
+        "y": 23
       },
       "targets": [
         {
@@ -530,7 +724,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 12
+        "y": 23
       },
       "targets": [
         {
@@ -596,7 +790,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 31
       },
       "collapsed": false
     },
@@ -613,7 +807,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 21
+        "y": 32
       },
       "targets": [
         {
@@ -681,7 +875,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 21
+        "y": 32
       },
       "targets": [
         {
@@ -750,7 +944,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 29
+        "y": 40
       },
       "targets": [
         {
@@ -919,7 +1113,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 39
+        "y": 50
       },
       "collapsed": false
     },
@@ -936,7 +1130,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 40
+        "y": 51
       },
       "targets": [
         {
@@ -1007,7 +1201,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 48
+        "y": 59
       },
       "targets": [
         {

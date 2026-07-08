@@ -6,6 +6,20 @@ alert / recording rules. This repo is not itself deployed by any script — the
 stack runs on a dedicated EC2 that applies these files manually. See
 `README.md` for the dockprom stack itself.
 
+## GitHub CLI: set the default repo first
+
+Clones of this repo typically carry an `upstream` remote pointing at
+`stefanprodan/dockprom`, and without a configured default `gh` may resolve
+PR/issue numbers against *that* repo — returning decade-old dockprom PRs
+instead of ours. Before trusting any `gh pr`/`gh issue` output, run once per
+clone:
+
+```bash
+gh repo set-default Lynxight/prometheus-setup
+```
+
+or pass `-R Lynxight/prometheus-setup` on each command.
+
 ## Generated dashboards — check before you edit
 
 Some dashboards under `grafana/provisioning/dashboards/*.json` are **generated
@@ -36,12 +50,6 @@ deleting its dashboard is caught; an off-convention generator is discoverable
 *only* through that marker, so if the dashboard is deleted its orphaning goes
 unnoticed. Prefer the convention; reach for an off-convention name only when
 you have a reason.
-
-### Currently generated
-
-| Dashboard JSON | Generator |
-|----------------|-----------|
-| `grafana/provisioning/dashboards/pool_health_metrics.json` | `helpers/gen_pool_health_dashboard.py` |
 
 ### Enforcement
 

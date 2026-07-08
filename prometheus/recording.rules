@@ -4,3 +4,9 @@ groups:
       # 1 when swimmer_count >= 0 and NOT in maintenance, 0 when < 0, absent during maintenance
       - record: cvs:swimmer_valid:bool
         expr: (swimmer_count >= bool 0) and on(pool_name, site_name, environment) (cvs_maintenance_mode == 0)
+      # 1 when every camera on the pool is producing frames (per-camera actual_fps > 0.5,
+      # collapsed per-pool via min — any single dead camera flips the pool to 0),
+      # absent during maintenance. 0.5 is a conservative "basically alive" floor
+      # (expected_fps defaults to 4; a disconnected camera reports 0).
+      - record: cvs:software_up:bool
+        expr: (min by (pool_name, site_name, environment) (actual_fps) > bool 0.5) and on(pool_name, site_name, environment) (cvs_maintenance_mode == 0)
