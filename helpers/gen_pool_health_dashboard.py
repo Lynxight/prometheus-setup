@@ -322,7 +322,17 @@ VAR_DEFS = [
     ("pool_name", "Pool", 'label_values(swimmer_count{site_name=~"$site_name"},pool_name)', True, True, 1),
 ]
 
+# Paths derived from this file's location so the marker + output path track
+# the script if it's renamed or moved, instead of being hardcoded.
+REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
+GENERATOR_REL = pathlib.Path(__file__).resolve().relative_to(REPO_ROOT).as_posix()
+
 dashboard = {
+    "__generated_by": GENERATOR_REL,
+    "__generated_warning": (
+        "GENERATED FILE — do not edit by hand. Edit the generator and re-run: "
+        f"python3 {GENERATOR_REL}"
+    ),
     "__inputs": [],
     "__requires": [
         {"type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0"}
@@ -365,7 +375,7 @@ dashboard = {
     "panels": panels,
 }
 
-out = str(pathlib.Path(__file__).resolve().parent.parent / "grafana/provisioning/dashboards/pool_health_metrics.json")
+out = str(REPO_ROOT / "grafana/provisioning/dashboards/pool_health_metrics.json")
 with open(out, "w") as f:
     json.dump(dashboard, f, indent=2)
     f.write("\n")

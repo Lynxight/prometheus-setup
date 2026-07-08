@@ -1,4 +1,6 @@
 {
+  "__generated_by": "helpers/gen_pool_health_dashboard.py",
+  "__generated_warning": "GENERATED FILE \u2014 do not edit by hand. Edit the generator and re-run: python3 helpers/gen_pool_health_dashboard.py",
   "__inputs": [],
   "__requires": [
     {
