@@ -77,11 +77,18 @@ def main() -> int:
 
     generators = sorted(to_run)
 
-    # Generate into a temp dir (the real files are never touched) and compare.
+    # Generate and compare. Each generator writes into its OWN temp subdir, so
+    # two generators that emit the same <name>.json are caught as a collision
+    # rather than one silently overwriting the other. The real files are never
+    # touched.
     if generators:
         with tempfile.TemporaryDirectory() as tmp:
-            env = {**os.environ, "DASHBOARD_OUT_DIR": tmp}
+            tmp_root = pathlib.Path(tmp)
+            produced_by = {}  # <name>.json -> [(generator, produced path), ...]
             for rel in generators:
+                gen_out = tmp_root / rel.replace("/", "_")
+                gen_out.mkdir(parents=True, exist_ok=True)
+                env = {**os.environ, "DASHBOARD_OUT_DIR": str(gen_out)}
                 proc = subprocess.run([sys.executable, str(REPO_ROOT / rel)],
                                       cwd=REPO_ROOT, env=env,
                                       capture_output=True, text=True)
@@ -92,21 +99,28 @@ def main() -> int:
                     if output:
                         print(output)
                     return 2
+                for q in sorted(gen_out.glob("*.json")):
+                    produced_by.setdefault(q.name, []).append((rel, q))
 
-            produced_names = {q.name for q in pathlib.Path(tmp).glob("*.json")}
-            for produced in sorted(pathlib.Path(tmp).glob("*.json")):
-                committed = DASH_DIR / produced.name
-                rel = committed.relative_to(REPO_ROOT).as_posix()
+            for name, sources in sorted(produced_by.items()):
+                committed = DASH_DIR / name
+                relc = committed.relative_to(REPO_ROOT).as_posix()
+                if len(sources) > 1:
+                    gens = ", ".join(g for g, _ in sources)
+                    problems.append(f"{relc}: produced by multiple generators "
+                                    f"({gens}) — output filenames must be unique")
+                    continue
+                produced = sources[0][1]
                 if not committed.is_file():
-                    problems.append(f"{rel}: generator produces this file but it is missing (deleted?)")
+                    problems.append(f"{relc}: generator produces this file but it is missing (deleted?)")
                 elif committed.read_bytes() != produced.read_bytes():
-                    problems.append(f"{rel}: file does not match its generator's output")
+                    problems.append(f"{relc}: file does not match its generator's output")
 
             # A committed dashboard that still claims a generator, but which no
             # generator produced this run, is stale — e.g. the generator was
             # changed to emit a different filename, leaving this one behind.
             for name, marker in sorted(marked.items()):
-                if name not in produced_names:
+                if name not in produced_by:
                     problems.append(
                         f"{name}: claims generator '{marker}', but it no longer "
                         f"produces this file (renamed output? stale file?)"
