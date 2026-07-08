@@ -23,7 +23,10 @@ the next time the generator runs.
 **If you create a dashboard programmatically:** commit the generator to
 `helpers/` and make it emit `"__generated_by"` (and a `"__generated_warning"`)
 as the first keys of the dashboard object, so the next person or AI finds it.
-Follow the naming convention `helpers/gen_<name>.py` → `<name>.json`.
+Follow the naming convention `helpers/gen_<name>.py` → `<name>.json`, and have
+the generator write into `$DASHBOARD_OUT_DIR` when that env var is set (else
+the default dashboards dir) so the checker can regenerate into a temp dir to
+compare without touching working files.
 
 ### Currently generated
 

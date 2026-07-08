@@ -5,6 +5,7 @@ The dashboard JSON is generated — edit this script and re-run it instead of
 editing the JSON by hand.
 """
 import json
+import os
 import pathlib
 
 DS = {"type": "prometheus", "uid": "PBFA97CFB590B2093"}
@@ -375,7 +376,14 @@ dashboard = {
     "panels": panels,
 }
 
-out = str(REPO_ROOT / "grafana/provisioning/dashboards/pool_health_metrics.json")
+# Output dir is overridable via DASHBOARD_OUT_DIR so tooling
+# (helpers/check_generated_dashboards.py) can regenerate into a temp dir to
+# compare, without touching the committed file.
+out_dir = pathlib.Path(
+    os.environ.get("DASHBOARD_OUT_DIR", REPO_ROOT / "grafana/provisioning/dashboards")
+)
+out_dir.mkdir(parents=True, exist_ok=True)
+out = str(out_dir / "pool_health_metrics.json")
 with open(out, "w") as f:
     json.dump(dashboard, f, indent=2)
     f.write("\n")
