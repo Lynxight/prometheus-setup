@@ -14,6 +14,8 @@ instead.
 | `pool_health_metrics.json` | ✅ generated | `helpers/gen_pool_health_dashboard.py` |
 | everything else | hand-authored | edit the JSON directly |
 
-Creating a dashboard from a script? Commit the generator to `helpers/`
-(`gen_<name>.py` → `<name>.json`) and have it write `"__generated_by"` as the
-first key, so the convention stays discoverable.
+Creating a dashboard from a script? Commit the generator to `helpers/` and
+have it write `"__generated_by"` as the first key, so the convention stays
+discoverable. The `gen_<name>.py` → `<name>.json` naming is recommended (it
+lets the checker also catch a dashboard deleted out from under its generator),
+but any script a `"__generated_by"` marker names is drift-checked regardless.
