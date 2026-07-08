@@ -86,7 +86,9 @@ def main() -> int:
             tmp_root = pathlib.Path(tmp)
             produced_by = {}  # <name>.json -> [(generator, produced path), ...]
             for rel in generators:
-                gen_out = tmp_root / rel.replace("/", "_")
+                # Use the generator's repo-relative path (which is unique) as the
+                # subdir, so distinct generators never map to the same dir.
+                gen_out = tmp_root / rel
                 gen_out.mkdir(parents=True, exist_ok=True)
                 env = {**os.environ, "DASHBOARD_OUT_DIR": str(gen_out)}
                 proc = subprocess.run([sys.executable, str(REPO_ROOT / rel)],
@@ -99,7 +101,15 @@ def main() -> int:
                     if output:
                         print(output)
                     return 2
-                for q in sorted(gen_out.glob("*.json")):
+                outputs = sorted(gen_out.glob("*.json"))
+                if not outputs:
+                    # Exit 0 but no JSON = a broken/changed generator that would
+                    # otherwise silently disable its own drift check.
+                    problems.append(f"{rel}: generator produced no dashboard "
+                                    f"JSON (exited 0 but wrote nothing to "
+                                    f"DASHBOARD_OUT_DIR)")
+                    continue
+                for q in outputs:
                     produced_by.setdefault(q.name, []).append((rel, q))
 
             for name, sources in sorted(produced_by.items()):
