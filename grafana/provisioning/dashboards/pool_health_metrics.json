@@ -224,30 +224,8 @@
           },
           "editorMode": "code",
           "expr": "min(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[$__range]) * 100) or vector(0)",
-          "legendFormat": "Status",
+          "legendFormat": "Swimmer Count (valid)",
           "refId": "A",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "min(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[$__range]) * 100) or vector(0)",
-          "legendFormat": "Name",
-          "refId": "B",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "min(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[$__range]) * 100) or vector(0)",
-          "legendFormat": "Compliance",
-          "refId": "C",
           "instant": true
         }
       ],
@@ -269,88 +247,37 @@
               }
             ]
           },
+          "mappings": [
+            {
+              "type": "range",
+              "options": {
+                "from": 99,
+                "to": 100,
+                "result": {
+                  "text": "GO"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0,
+                "to": 100,
+                "result": {
+                  "text": "NO-GO"
+                }
+              }
+            }
+          ],
           "unit": "none"
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "A"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "range",
-                    "options": {
-                      "from": 99,
-                      "to": 100,
-                      "result": {
-                        "text": "GO"
-                      }
-                    }
-                  },
-                  {
-                    "type": "range",
-                    "options": {
-                      "from": 0,
-                      "to": 100,
-                      "result": {
-                        "text": "NO-GO"
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "B"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "range",
-                    "options": {
-                      "from": 0,
-                      "to": 100,
-                      "result": {
-                        "text": "Swimmer Count"
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "C"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "suffix:% valid"
-              },
-              {
-                "id": "decimals",
-                "value": 2
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "options": {
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center",
-        "orientation": "vertical",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -358,7 +285,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value"
+        "textMode": "value_and_name"
       }
     },
     {
@@ -384,30 +311,8 @@
           },
           "editorMode": "code",
           "expr": "min(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
-          "legendFormat": "Status",
+          "legendFormat": "Detection FPS (> 0.9)",
           "refId": "A",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "min(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
-          "legendFormat": "Name",
-          "refId": "B",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "min(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
-          "legendFormat": "Compliance",
-          "refId": "C",
           "instant": true
         }
       ],
@@ -429,88 +334,37 @@
               }
             ]
           },
+          "mappings": [
+            {
+              "type": "range",
+              "options": {
+                "from": 99,
+                "to": 100,
+                "result": {
+                  "text": "GO"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0,
+                "to": 100,
+                "result": {
+                  "text": "NO-GO"
+                }
+              }
+            }
+          ],
           "unit": "none"
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "A"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "range",
-                    "options": {
-                      "from": 99,
-                      "to": 100,
-                      "result": {
-                        "text": "GO"
-                      }
-                    }
-                  },
-                  {
-                    "type": "range",
-                    "options": {
-                      "from": 0,
-                      "to": 100,
-                      "result": {
-                        "text": "NO-GO"
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "B"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "range",
-                    "options": {
-                      "from": 0,
-                      "to": 100,
-                      "result": {
-                        "text": "Detection FPS"
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "C"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "suffix:% > 0.9"
-              },
-              {
-                "id": "decimals",
-                "value": 2
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "options": {
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center",
-        "orientation": "vertical",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -518,7 +372,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value"
+        "textMode": "value_and_name"
       }
     },
     {
@@ -544,30 +398,8 @@
           },
           "editorMode": "code",
           "expr": "min(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
-          "legendFormat": "Status",
+          "legendFormat": "Decision FPS (> 0.9)",
           "refId": "A",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "min(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
-          "legendFormat": "Name",
-          "refId": "B",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "min(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
-          "legendFormat": "Compliance",
-          "refId": "C",
           "instant": true
         }
       ],
@@ -589,88 +421,37 @@
               }
             ]
           },
+          "mappings": [
+            {
+              "type": "range",
+              "options": {
+                "from": 99,
+                "to": 100,
+                "result": {
+                  "text": "GO"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0,
+                "to": 100,
+                "result": {
+                  "text": "NO-GO"
+                }
+              }
+            }
+          ],
           "unit": "none"
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "A"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "range",
-                    "options": {
-                      "from": 99,
-                      "to": 100,
-                      "result": {
-                        "text": "GO"
-                      }
-                    }
-                  },
-                  {
-                    "type": "range",
-                    "options": {
-                      "from": 0,
-                      "to": 100,
-                      "result": {
-                        "text": "NO-GO"
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "B"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "range",
-                    "options": {
-                      "from": 0,
-                      "to": 100,
-                      "result": {
-                        "text": "Decision FPS"
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "C"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "suffix:% > 0.9"
-              },
-              {
-                "id": "decimals",
-                "value": 2
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "options": {
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center",
-        "orientation": "vertical",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -678,7 +459,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value"
+        "textMode": "value_and_name"
       }
     },
     {
@@ -704,30 +485,8 @@
           },
           "editorMode": "code",
           "expr": "min(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
-          "legendFormat": "Status",
+          "legendFormat": "Frame Gap (< 1s)",
           "refId": "A",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "min(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
-          "legendFormat": "Name",
-          "refId": "B",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "min(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
-          "legendFormat": "Compliance",
-          "refId": "C",
           "instant": true
         }
       ],
@@ -749,88 +508,37 @@
               }
             ]
           },
+          "mappings": [
+            {
+              "type": "range",
+              "options": {
+                "from": 99,
+                "to": 100,
+                "result": {
+                  "text": "GO"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0,
+                "to": 100,
+                "result": {
+                  "text": "NO-GO"
+                }
+              }
+            }
+          ],
           "unit": "none"
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "A"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "range",
-                    "options": {
-                      "from": 99,
-                      "to": 100,
-                      "result": {
-                        "text": "GO"
-                      }
-                    }
-                  },
-                  {
-                    "type": "range",
-                    "options": {
-                      "from": 0,
-                      "to": 100,
-                      "result": {
-                        "text": "NO-GO"
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "B"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "range",
-                    "options": {
-                      "from": 0,
-                      "to": 100,
-                      "result": {
-                        "text": "Frame Gap"
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "C"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "suffix:% < 1s"
-              },
-              {
-                "id": "decimals",
-                "value": 2
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "options": {
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center",
-        "orientation": "vertical",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -838,7 +546,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value"
+        "textMode": "value_and_name"
       }
     },
     {
@@ -864,30 +572,8 @@
           },
           "editorMode": "code",
           "expr": "min(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
-          "legendFormat": "Status",
+          "legendFormat": "Fuse Error (<= 1.5)",
           "refId": "A",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "min(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
-          "legendFormat": "Name",
-          "refId": "B",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "min(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
-          "legendFormat": "Compliance",
-          "refId": "C",
           "instant": true
         }
       ],
@@ -909,88 +595,37 @@
               }
             ]
           },
+          "mappings": [
+            {
+              "type": "range",
+              "options": {
+                "from": 99,
+                "to": 100,
+                "result": {
+                  "text": "GO"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0,
+                "to": 100,
+                "result": {
+                  "text": "NO-GO"
+                }
+              }
+            }
+          ],
           "unit": "none"
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "A"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "range",
-                    "options": {
-                      "from": 99,
-                      "to": 100,
-                      "result": {
-                        "text": "GO"
-                      }
-                    }
-                  },
-                  {
-                    "type": "range",
-                    "options": {
-                      "from": 0,
-                      "to": 100,
-                      "result": {
-                        "text": "NO-GO"
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "B"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "range",
-                    "options": {
-                      "from": 0,
-                      "to": 100,
-                      "result": {
-                        "text": "Fuse Error"
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "C"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "suffix:% <= 1.5"
-              },
-              {
-                "id": "decimals",
-                "value": 2
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "options": {
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center",
-        "orientation": "vertical",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -998,7 +633,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "value"
+        "textMode": "value_and_name"
       }
     },
     {
