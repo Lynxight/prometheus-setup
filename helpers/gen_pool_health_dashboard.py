@@ -98,6 +98,29 @@ def timeseries(title, desc, y, targets, unit, steps, calcs, overrides=None, min_
     }
 
 
+# The stability policy: a metric is GO if it held within its limit at least
+# GO_PCT% of the selected time range. Compliance percentages display with
+# PCT_DECIMALS decimals everywhere.
+GO_PCT = 99
+PCT_DECIMALS = 2
+# The red/green cutoff is derived from the display rounding, not GO_PCT
+# itself: anything that *displays* as >= GO_PCT after rounding (e.g. 98.996
+# shows "99.00") must be green, or the number a viewer reads contradicts the
+# color. The misclassified band (98.995..99) is ~2 minutes over a 3-day range.
+GO_COLOR_CUTOFF = GO_PCT - 0.5 * 10**-PCT_DECIMALS  # 98.995
+# Range mappings are inclusive on both ends (Grafana has no half-open
+# ranges), but they're evaluated in order with first-match-wins, so the
+# catch-all NO-GO range only applies below the cutoff.
+GO_NO_GO_MAPPINGS = [
+    {"type": "range", "options": {"from": GO_COLOR_CUTOFF, "to": 100, "result": {"text": "GO"}}},
+    {"type": "range", "options": {"from": 0, "to": 100, "result": {"text": "NO-GO"}}},
+]
+GO_NO_GO_STEPS = [
+    {"color": "red", "value": None},
+    {"color": "green", "value": GO_COLOR_CUTOFF},
+]
+
+
 def bargauge(title, desc, y, inner, legend):
     """`inner` is a 0-100 percentage expression (e.g. SWIMMER_PCT); renders
     it per series. Solid red/green at the same 99% bar as the
@@ -119,12 +142,9 @@ def bargauge(title, desc, y, inner, legend):
         "fieldConfig": {
             "defaults": {
                 "color": {"mode": "thresholds"},
-                "thresholds": {"mode": "absolute", "steps": [
-                    {"color": "red", "value": None},
-                    {"color": "green", "value": 99},
-                ]},
+                "thresholds": {"mode": "absolute", "steps": GO_NO_GO_STEPS},
                 "unit": "percent",
-                "decimals": 1,
+                "decimals": PCT_DECIMALS,
                 "min": 0,
                 "max": 100,
                 "links": [OPS_LINK],
@@ -142,8 +162,54 @@ def bargauge(title, desc, y, inner, legend):
     }
 
 
+def metric_tile(name, desc, x, pct_expr, threshold_label, y):
+    """Per-parameter tile (Amitai's mockup): one frame per metric — the
+    parameter name as the small field-name line and the live compliance %
+    vs. its threshold as the big value (e.g. "99.93% > 0.9", via a suffix
+    unit), on a red/green go/no-go background. A stat value mapping
+    *replaces* the number, so GO/NO-GO text and the live value can't share
+    one frame — the value wins here, the background color carries go/no-go,
+    and the explicit GO/NO-GO word stays on the Overall tile. The panel
+    title is empty because the name is inside the tile. min() takes the
+    worst pool/camera among the selected ones; `or vector(0)` shows 0% when
+    the metric isn't reporting at all (same rationale as the Overall
+    tile)."""
+    inner = f"min({pct_expr}) or vector(0)"
+    return {
+        "id": next(ids),
+        "type": "stat",
+        "title": "",
+        "description": (
+            f"{name}: {desc} Worst pool/camera among the selected ones. "
+            f"Green if within threshold at least {GO_PCT}% of the selected time range."
+        ),
+        "datasource": DS,
+        "gridPos": {"h": 4, "w": 4, "x": x, "y": y},
+        "targets": [
+            target(inner, name, "A", instant=True),
+        ],
+        "fieldConfig": {
+            "defaults": {
+                "color": {"mode": "thresholds"},
+                "thresholds": {"mode": "absolute", "steps": GO_NO_GO_STEPS},
+                "unit": f"suffix:% {threshold_label}",
+                "decimals": PCT_DECIMALS,
+            },
+            "overrides": [],
+        },
+        "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "orientation": "horizontal",
+            "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False},
+            "textMode": "value_and_name",
+        },
+    }
+
+
 def go_no_go(y):
-    """Single status tile: GO only if every metric, across every currently
+    """Overall status tile: GO only if every metric, across every currently
     selected pool/camera, held within threshold >= 99% of the range.
     Each per-metric min() falls back to `or vector(0)` so a metric that
     isn't reporting at all (e.g. its service crashed and stopped emitting
@@ -161,25 +227,21 @@ def go_no_go(y):
     return {
         "id": next(ids),
         "type": "stat",
-        "title": "Pool Health Status",
-        "description": "GO only if every metric (swimmer count validity, "
-        "detection FPS > 0.9, decision FPS > 0.9, frame gap < 1s, fuse error "
-        "<= 1.5), across every currently selected pool/camera, held within "
-        "threshold at least 99% of the selected time range.",
+        "title": "Overall",
+        "description": (
+            "GO only if every metric (swimmer count validity, detection FPS "
+            "> 0.9, decision FPS > 0.9, frame gap < 1s, fuse error <= 1.5), "
+            "across every currently selected pool/camera, held within "
+            f"threshold at least {GO_PCT}% of the selected time range."
+        ),
         "datasource": DS,
-        "gridPos": {"h": 4, "w": 24, "x": 0, "y": y},
+        "gridPos": {"h": 4, "w": 4, "x": 0, "y": y},
         "targets": [target(combined, "", "A", instant=True)],
         "fieldConfig": {
             "defaults": {
                 "color": {"mode": "thresholds"},
-                "thresholds": {"mode": "absolute", "steps": [
-                    {"color": "red", "value": None},
-                    {"color": "green", "value": 99},
-                ]},
-                "mappings": [
-                    {"type": "range", "options": {"from": 0, "to": 98.999999, "result": {"text": "NO-GO"}}},
-                    {"type": "range", "options": {"from": 99, "to": 100, "result": {"text": "GO"}}},
-                ],
+                "thresholds": {"mode": "absolute", "steps": GO_NO_GO_STEPS},
+                "mappings": GO_NO_GO_MAPPINGS,
                 "unit": "none",
             },
             "overrides": [],
@@ -198,7 +260,40 @@ def go_no_go(y):
 panels = []
 y = 0
 
-panels.append(go_no_go(y)); y += 4
+panels.append(go_no_go(y))
+panels.append(metric_tile(
+    "Swimmer Count",
+    "% of the selected time range with a valid swimmer count "
+    "(swimmer_count >= 0), excluding planned maintenance windows (nightly "
+    "restart / clean stop).",
+    4, SWIMMER_PCT, "valid", y,
+))
+panels.append(metric_tile(
+    "Detection FPS",
+    "% of the selected time range with detection_fps above 0.9, excluding "
+    "planned maintenance windows.",
+    8, DETECTION_PCT, "> 0.9", y,
+))
+panels.append(metric_tile(
+    "Decision FPS",
+    "% of the selected time range with decisions_engine_fps above 0.9, "
+    "excluding planned maintenance windows.",
+    12, DECISION_PCT, "> 0.9", y,
+))
+panels.append(metric_tile(
+    "Frame Gap",
+    "% of the selected time range with max_time_between_frames below 1s, "
+    "excluding planned maintenance windows.",
+    16, FRAME_GAP_PCT, "< 1s", y,
+))
+panels.append(metric_tile(
+    "Fuse Error",
+    "% of the selected time range with mean_fuse_error at or below 1.5 "
+    "(the 1.5 sentinel counts as healthy), excluding planned maintenance "
+    "windows.",
+    20, FUSE_ERROR_PCT, "<= 1.5", y,
+))
+y += 4
 
 # --- Row 1: Swimmer Count ---
 panels.append(row("Swimmer Count", y)); y += 1
