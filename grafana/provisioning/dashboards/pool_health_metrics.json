@@ -156,7 +156,7 @@
               },
               {
                 "color": "green",
-                "value": 99
+                "value": 98.995
               }
             ]
           },
@@ -164,7 +164,7 @@
             {
               "type": "range",
               "options": {
-                "from": 99,
+                "from": 98.995,
                 "to": 100,
                 "result": {
                   "text": "GO"
@@ -243,7 +243,7 @@
               },
               {
                 "color": "green",
-                "value": 99
+                "value": 98.995
               }
             ]
           },
@@ -309,7 +309,7 @@
               },
               {
                 "color": "green",
-                "value": 99
+                "value": 98.995
               }
             ]
           },
@@ -375,7 +375,7 @@
               },
               {
                 "color": "green",
-                "value": 99
+                "value": 98.995
               }
             ]
           },
@@ -441,7 +441,7 @@
               },
               {
                 "color": "green",
-                "value": 99
+                "value": 98.995
               }
             ]
           },
@@ -507,7 +507,7 @@
               },
               {
                 "color": "green",
-                "value": 99
+                "value": 98.995
               }
             ]
           },
@@ -698,7 +698,7 @@
               },
               {
                 "color": "green",
-                "value": 99
+                "value": 98.995
               }
             ]
           },
@@ -872,7 +872,7 @@
               },
               {
                 "color": "green",
-                "value": 99
+                "value": 98.995
               }
             ]
           },
@@ -1046,7 +1046,7 @@
               },
               {
                 "color": "green",
-                "value": 99
+                "value": 98.995
               }
             ]
           },
@@ -1220,7 +1220,7 @@
               },
               {
                 "color": "green",
-                "value": 99
+                "value": 98.995
               }
             ]
           },
@@ -1390,7 +1390,7 @@
               },
               {
                 "color": "green",
-                "value": 99
+                "value": 98.995
               }
             ]
           },

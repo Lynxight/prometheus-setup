@@ -98,6 +98,29 @@ def timeseries(title, desc, y, targets, unit, steps, calcs, overrides=None, min_
     }
 
 
+# The stability policy: a metric is GO if it held within its limit at least
+# GO_PCT% of the selected time range. Compliance percentages display with
+# PCT_DECIMALS decimals everywhere.
+GO_PCT = 99
+PCT_DECIMALS = 2
+# The red/green cutoff is derived from the display rounding, not GO_PCT
+# itself: anything that *displays* as >= GO_PCT after rounding (e.g. 98.996
+# shows "99.00") must be green, or the number a viewer reads contradicts the
+# color. The misclassified band (98.995..99) is ~2 minutes over a 3-day range.
+GO_COLOR_CUTOFF = GO_PCT - 0.5 * 10**-PCT_DECIMALS  # 98.995
+# Range mappings are inclusive on both ends (Grafana has no half-open
+# ranges), but they're evaluated in order with first-match-wins, so the
+# catch-all NO-GO range only applies below the cutoff.
+GO_NO_GO_MAPPINGS = [
+    {"type": "range", "options": {"from": GO_COLOR_CUTOFF, "to": 100, "result": {"text": "GO"}}},
+    {"type": "range", "options": {"from": 0, "to": 100, "result": {"text": "NO-GO"}}},
+]
+GO_NO_GO_STEPS = [
+    {"color": "red", "value": None},
+    {"color": "green", "value": GO_COLOR_CUTOFF},
+]
+
+
 def bargauge(title, desc, y, inner, legend):
     """`inner` is a 0-100 percentage expression (e.g. SWIMMER_PCT); renders
     it per series. Solid red/green at the same 99% bar as the
@@ -119,15 +142,9 @@ def bargauge(title, desc, y, inner, legend):
         "fieldConfig": {
             "defaults": {
                 "color": {"mode": "thresholds"},
-                "thresholds": {"mode": "absolute", "steps": [
-                    {"color": "red", "value": None},
-                    {"color": "green", "value": 99},
-                ]},
+                "thresholds": {"mode": "absolute", "steps": GO_NO_GO_STEPS},
                 "unit": "percent",
-                # 2 decimals like the tiles: at 1 decimal a pool at 98.96%
-                # displays 99.0 while rendering red — number says GO, color
-                # says NO-GO.
-                "decimals": 2,
+                "decimals": PCT_DECIMALS,
                 "min": 0,
                 "max": 100,
                 "links": [OPS_LINK],
@@ -143,19 +160,6 @@ def bargauge(title, desc, y, inner, legend):
             "minVizHeight": 16,
         },
     }
-
-
-# Range mappings are inclusive on both ends (Grafana has no half-open
-# ranges), but they're evaluated in order with first-match-wins, so the
-# catch-all NO-GO range only applies below 99.
-GO_NO_GO_MAPPINGS = [
-    {"type": "range", "options": {"from": 99, "to": 100, "result": {"text": "GO"}}},
-    {"type": "range", "options": {"from": 0, "to": 100, "result": {"text": "NO-GO"}}},
-]
-GO_NO_GO_STEPS = [
-    {"color": "red", "value": None},
-    {"color": "green", "value": 99},
-]
 
 
 def metric_tile(name, desc, x, pct_expr, threshold_label, y):
@@ -177,7 +181,7 @@ def metric_tile(name, desc, x, pct_expr, threshold_label, y):
         "title": "",
         "description": (
             f"{name}: {desc} Worst pool/camera among the selected ones. "
-            "Green if within threshold at least 99% of the selected time range."
+            f"Green if within threshold at least {GO_PCT}% of the selected time range."
         ),
         "datasource": DS,
         "gridPos": {"h": 4, "w": 4, "x": x, "y": y},
@@ -189,7 +193,7 @@ def metric_tile(name, desc, x, pct_expr, threshold_label, y):
                 "color": {"mode": "thresholds"},
                 "thresholds": {"mode": "absolute", "steps": GO_NO_GO_STEPS},
                 "unit": f"suffix:% {threshold_label}",
-                "decimals": 2,
+                "decimals": PCT_DECIMALS,
             },
             "overrides": [],
         },
@@ -228,7 +232,7 @@ def go_no_go(y):
             "GO only if every metric (swimmer count validity, detection FPS "
             "> 0.9, decision FPS > 0.9, frame gap < 1s, fuse error <= 1.5), "
             "across every currently selected pool/camera, held within "
-            "threshold at least 99% of the selected time range."
+            f"threshold at least {GO_PCT}% of the selected time range."
         ),
         "datasource": DS,
         "gridPos": {"h": 4, "w": 4, "x": 0, "y": y},
