@@ -172,9 +172,10 @@ def metric_tile(name, desc, x, pct_expr, threshold_label, y):
         "id": next(ids),
         "type": "stat",
         "title": "",
-        "description": f"{name}: {desc} Worst pool/camera among the selected "
-        "ones. Green if within threshold at least 99% of the selected time "
-        "range.",
+        "description": (
+            f"{name}: {desc} Worst pool/camera among the selected ones. "
+            "Green if within threshold at least 99% of the selected time range."
+        ),
         "datasource": DS,
         "gridPos": {"h": 4, "w": 4, "x": x, "y": y},
         "targets": [
@@ -220,10 +221,12 @@ def go_no_go(y):
         "id": next(ids),
         "type": "stat",
         "title": "Overall",
-        "description": "GO only if every metric (swimmer count validity, "
-        "detection FPS > 0.9, decision FPS > 0.9, frame gap < 1s, fuse error "
-        "<= 1.5), across every currently selected pool/camera, held within "
-        "threshold at least 99% of the selected time range.",
+        "description": (
+            "GO only if every metric (swimmer count validity, detection FPS "
+            "> 0.9, decision FPS > 0.9, frame gap < 1s, fuse error <= 1.5), "
+            "across every currently selected pool/camera, held within "
+            "threshold at least 99% of the selected time range."
+        ),
         "datasource": DS,
         "gridPos": {"h": 4, "w": 4, "x": 0, "y": y},
         "targets": [target(combined, "", "A", instant=True)],
