@@ -205,7 +205,7 @@
       "id": 2,
       "type": "stat",
       "title": "",
-      "description": "Swimmer Count: % of the selected time range with a valid swimmer count (swimmer_count >= 0), excluding planned maintenance windows (nightly restart / clean stop). Worst pool/camera among the selected ones. GO if within threshold at least 99% of the selected time range.",
+      "description": "Swimmer Count: % of the selected time range with a valid swimmer count (swimmer_count >= 0), excluding planned maintenance windows (nightly restart / clean stop). Worst pool/camera among the selected ones. Green if within threshold at least 99% of the selected time range.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -224,7 +224,7 @@
           },
           "editorMode": "code",
           "expr": "min(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[$__range]) * 100) or vector(0)",
-          "legendFormat": "Swimmer Count (valid)",
+          "legendFormat": "Swimmer Count",
           "refId": "A",
           "instant": true
         }
@@ -247,29 +247,8 @@
               }
             ]
           },
-          "mappings": [
-            {
-              "type": "range",
-              "options": {
-                "from": 99,
-                "to": 100,
-                "result": {
-                  "text": "GO"
-                }
-              }
-            },
-            {
-              "type": "range",
-              "options": {
-                "from": 0,
-                "to": 100,
-                "result": {
-                  "text": "NO-GO"
-                }
-              }
-            }
-          ],
-          "unit": "none"
+          "unit": "suffix:% valid",
+          "decimals": 2
         },
         "overrides": []
       },
@@ -292,7 +271,7 @@
       "id": 3,
       "type": "stat",
       "title": "",
-      "description": "Detection FPS: % of the selected time range with detection_fps above 0.9, excluding planned maintenance windows. Worst pool/camera among the selected ones. GO if within threshold at least 99% of the selected time range.",
+      "description": "Detection FPS: % of the selected time range with detection_fps above 0.9, excluding planned maintenance windows. Worst pool/camera among the selected ones. Green if within threshold at least 99% of the selected time range.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -311,7 +290,7 @@
           },
           "editorMode": "code",
           "expr": "min(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
-          "legendFormat": "Detection FPS (> 0.9)",
+          "legendFormat": "Detection FPS",
           "refId": "A",
           "instant": true
         }
@@ -334,29 +313,8 @@
               }
             ]
           },
-          "mappings": [
-            {
-              "type": "range",
-              "options": {
-                "from": 99,
-                "to": 100,
-                "result": {
-                  "text": "GO"
-                }
-              }
-            },
-            {
-              "type": "range",
-              "options": {
-                "from": 0,
-                "to": 100,
-                "result": {
-                  "text": "NO-GO"
-                }
-              }
-            }
-          ],
-          "unit": "none"
+          "unit": "suffix:% > 0.9",
+          "decimals": 2
         },
         "overrides": []
       },
@@ -379,7 +337,7 @@
       "id": 4,
       "type": "stat",
       "title": "",
-      "description": "Decision FPS: % of the selected time range with decisions_engine_fps above 0.9, excluding planned maintenance windows. Worst pool/camera among the selected ones. GO if within threshold at least 99% of the selected time range.",
+      "description": "Decision FPS: % of the selected time range with decisions_engine_fps above 0.9, excluding planned maintenance windows. Worst pool/camera among the selected ones. Green if within threshold at least 99% of the selected time range.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -398,7 +356,7 @@
           },
           "editorMode": "code",
           "expr": "min(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
-          "legendFormat": "Decision FPS (> 0.9)",
+          "legendFormat": "Decision FPS",
           "refId": "A",
           "instant": true
         }
@@ -421,29 +379,8 @@
               }
             ]
           },
-          "mappings": [
-            {
-              "type": "range",
-              "options": {
-                "from": 99,
-                "to": 100,
-                "result": {
-                  "text": "GO"
-                }
-              }
-            },
-            {
-              "type": "range",
-              "options": {
-                "from": 0,
-                "to": 100,
-                "result": {
-                  "text": "NO-GO"
-                }
-              }
-            }
-          ],
-          "unit": "none"
+          "unit": "suffix:% > 0.9",
+          "decimals": 2
         },
         "overrides": []
       },
@@ -466,7 +403,7 @@
       "id": 5,
       "type": "stat",
       "title": "",
-      "description": "Frame Gap: % of the selected time range with max_time_between_frames below 1s, excluding planned maintenance windows. Worst pool/camera among the selected ones. GO if within threshold at least 99% of the selected time range.",
+      "description": "Frame Gap: % of the selected time range with max_time_between_frames below 1s, excluding planned maintenance windows. Worst pool/camera among the selected ones. Green if within threshold at least 99% of the selected time range.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -485,7 +422,7 @@
           },
           "editorMode": "code",
           "expr": "min(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
-          "legendFormat": "Frame Gap (< 1s)",
+          "legendFormat": "Frame Gap",
           "refId": "A",
           "instant": true
         }
@@ -508,29 +445,8 @@
               }
             ]
           },
-          "mappings": [
-            {
-              "type": "range",
-              "options": {
-                "from": 99,
-                "to": 100,
-                "result": {
-                  "text": "GO"
-                }
-              }
-            },
-            {
-              "type": "range",
-              "options": {
-                "from": 0,
-                "to": 100,
-                "result": {
-                  "text": "NO-GO"
-                }
-              }
-            }
-          ],
-          "unit": "none"
+          "unit": "suffix:% < 1s",
+          "decimals": 2
         },
         "overrides": []
       },
@@ -553,7 +469,7 @@
       "id": 6,
       "type": "stat",
       "title": "",
-      "description": "Fuse Error: % of the selected time range with mean_fuse_error at or below 1.5 (the 1.5 sentinel counts as healthy), excluding planned maintenance windows. Worst pool/camera among the selected ones. GO if within threshold at least 99% of the selected time range.",
+      "description": "Fuse Error: % of the selected time range with mean_fuse_error at or below 1.5 (the 1.5 sentinel counts as healthy), excluding planned maintenance windows. Worst pool/camera among the selected ones. Green if within threshold at least 99% of the selected time range.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -572,7 +488,7 @@
           },
           "editorMode": "code",
           "expr": "min(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
-          "legendFormat": "Fuse Error (<= 1.5)",
+          "legendFormat": "Fuse Error",
           "refId": "A",
           "instant": true
         }
@@ -595,29 +511,8 @@
               }
             ]
           },
-          "mappings": [
-            {
-              "type": "range",
-              "options": {
-                "from": 99,
-                "to": 100,
-                "result": {
-                  "text": "GO"
-                }
-              }
-            },
-            {
-              "type": "range",
-              "options": {
-                "from": 0,
-                "to": 100,
-                "result": {
-                  "text": "NO-GO"
-                }
-              }
-            }
-          ],
-          "unit": "none"
+          "unit": "suffix:% <= 1.5",
+          "decimals": 2
         },
         "overrides": []
       },

@@ -156,14 +156,15 @@ GO_NO_GO_STEPS = [
 
 
 def metric_tile(name, desc, x, pct_expr, threshold_label, y):
-    """Per-parameter GO/NO-GO tile (Amitai's mockup): one frame per metric —
-    big GO/NO-GO text with the parameter name and threshold as the small
-    field-name line under it (textMode value_and_name). A single stat value
-    can only render one line of live data, so the tile shows the mapped
-    GO/NO-GO status; the live compliance % behind it is in the metric's
-    bargauge panel below (and in this tile's hover tooltip). The panel title
-    is empty because the name is inside the tile. min() takes the worst
-    pool/camera among the selected ones; `or vector(0)` forces NO-GO when
+    """Per-parameter tile (Amitai's mockup): one frame per metric — the
+    parameter name as the small field-name line and the live compliance %
+    vs. its threshold as the big value (e.g. "99.93% > 0.9", via a suffix
+    unit), on a red/green go/no-go background. A stat value mapping
+    *replaces* the number, so GO/NO-GO text and the live value can't share
+    one frame — the value wins here, the background color carries go/no-go,
+    and the explicit GO/NO-GO word stays on the Overall tile. The panel
+    title is empty because the name is inside the tile. min() takes the
+    worst pool/camera among the selected ones; `or vector(0)` shows 0% when
     the metric isn't reporting at all (same rationale as the Overall
     tile)."""
     inner = f"min({pct_expr}) or vector(0)"
@@ -172,18 +173,19 @@ def metric_tile(name, desc, x, pct_expr, threshold_label, y):
         "type": "stat",
         "title": "",
         "description": f"{name}: {desc} Worst pool/camera among the selected "
-        "ones. GO if within threshold at least 99% of the selected time range.",
+        "ones. Green if within threshold at least 99% of the selected time "
+        "range.",
         "datasource": DS,
         "gridPos": {"h": 4, "w": 4, "x": x, "y": y},
         "targets": [
-            target(inner, f"{name} ({threshold_label})", "A", instant=True),
+            target(inner, name, "A", instant=True),
         ],
         "fieldConfig": {
             "defaults": {
                 "color": {"mode": "thresholds"},
                 "thresholds": {"mode": "absolute", "steps": GO_NO_GO_STEPS},
-                "mappings": GO_NO_GO_MAPPINGS,
-                "unit": "none",
+                "unit": f"suffix:% {threshold_label}",
+                "decimals": 2,
             },
             "overrides": [],
         },
