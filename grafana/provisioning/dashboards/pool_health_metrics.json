@@ -703,7 +703,7 @@
             ]
           },
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "min": 0,
           "max": 100,
           "links": [
@@ -877,7 +877,7 @@
             ]
           },
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "min": 0,
           "max": 100,
           "links": [
@@ -1051,7 +1051,7 @@
             ]
           },
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "min": 0,
           "max": 100,
           "links": [
@@ -1225,7 +1225,7 @@
             ]
           },
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "min": 0,
           "max": 100,
           "links": [
@@ -1395,7 +1395,7 @@
             ]
           },
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "min": 0,
           "max": 100,
           "links": [

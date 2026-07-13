@@ -124,7 +124,10 @@ def bargauge(title, desc, y, inner, legend):
                     {"color": "green", "value": 99},
                 ]},
                 "unit": "percent",
-                "decimals": 1,
+                # 2 decimals like the tiles: at 1 decimal a pool at 98.96%
+                # displays 99.0 while rendering red — number says GO, color
+                # says NO-GO.
+                "decimals": 2,
                 "min": 0,
                 "max": 100,
                 "links": [OPS_LINK],
