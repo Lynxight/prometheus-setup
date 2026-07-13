@@ -155,26 +155,31 @@ GO_NO_GO_STEPS = [
 ]
 
 
-def metric_tile(title, desc, x, pct_expr, threshold_label, y):
-    """Per-parameter GO/NO-GO tile (Amitai's suggestion): big GO/NO-GO text
-    with the compliance % vs. its threshold underneath (e.g. "99.93% > 0.9").
-    Both lines come from the same expression, queried twice — frame A is
-    value-mapped to GO/NO-GO text, frame B keeps the number and renders the
-    threshold via a suffix unit. min() takes the worst pool/camera among the
-    selected ones; `or vector(0)` forces NO-GO when the metric isn't
-    reporting at all (same rationale as the Overall tile)."""
+def metric_tile(name, desc, x, pct_expr, threshold_label, y):
+    """Per-parameter GO/NO-GO tile, laid out like Amitai's mockup: big
+    GO/NO-GO text, the parameter name under it, and the compliance % vs. its
+    threshold at the bottom (e.g. "99.93% > 0.9"). All three lines come from
+    the same expression, queried three times — frame A is value-mapped to
+    GO/NO-GO text, frame B is value-mapped to the (constant) parameter name
+    so it inherits the same threshold color and the background stays uniform,
+    and frame C keeps the number and renders the threshold via a suffix
+    unit. The panel title is empty because the name is inside the tile.
+    min() takes the worst pool/camera among the selected ones; `or vector(0)`
+    forces NO-GO when the metric isn't reporting at all (same rationale as
+    the Overall tile)."""
     inner = f"min({pct_expr}) or vector(0)"
     return {
         "id": next(ids),
         "type": "stat",
-        "title": title,
-        "description": desc + " Worst pool/camera among the selected ones. "
-        "GO if within threshold at least 99% of the selected time range.",
+        "title": "",
+        "description": f"{name}: {desc} Worst pool/camera among the selected "
+        "ones. GO if within threshold at least 99% of the selected time range.",
         "datasource": DS,
         "gridPos": {"h": 4, "w": 4, "x": x, "y": y},
         "targets": [
             target(inner, "Status", "A", instant=True),
-            target(inner, "Compliance", "B", instant=True),
+            target(inner, "Name", "B", instant=True),
+            target(inner, "Compliance", "C", instant=True),
         ],
         "fieldConfig": {
             "defaults": {
@@ -191,6 +196,14 @@ def metric_tile(title, desc, x, pct_expr, threshold_label, y):
                 },
                 {
                     "matcher": {"id": "byFrameRefID", "options": "B"},
+                    "properties": [
+                        {"id": "mappings", "value": [
+                            {"type": "range", "options": {"from": 0, "to": 100, "result": {"text": name}}},
+                        ]},
+                    ],
+                },
+                {
+                    "matcher": {"id": "byFrameRefID", "options": "C"},
                     "properties": [
                         {"id": "unit", "value": f"suffix:% {threshold_label}"},
                         {"id": "decimals", "value": 2},
