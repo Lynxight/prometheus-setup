@@ -117,7 +117,7 @@
     {
       "id": 1,
       "type": "stat",
-      "title": "Pool Health Status",
+      "title": "Overall",
       "description": "GO only if every metric (swimmer count validity, detection FPS > 0.9, decision FPS > 0.9, frame gap < 1s, fuse error <= 1.5), across every currently selected pool/camera, held within threshold at least 99% of the selected time range.",
       "datasource": {
         "type": "prometheus",
@@ -125,7 +125,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 24,
+        "w": 4,
         "x": 0,
         "y": 0
       },
@@ -164,20 +164,20 @@
             {
               "type": "range",
               "options": {
-                "from": 0,
-                "to": 98.999999,
+                "from": 99,
+                "to": 100,
                 "result": {
-                  "text": "NO-GO"
+                  "text": "GO"
                 }
               }
             },
             {
               "type": "range",
               "options": {
-                "from": 99,
+                "from": 0,
                 "to": 100,
                 "result": {
-                  "text": "GO"
+                  "text": "NO-GO"
                 }
               }
             }
@@ -203,6 +203,636 @@
     },
     {
       "id": 2,
+      "type": "stat",
+      "title": "Swimmer Count",
+      "description": "% of the selected time range with a valid swimmer count (swimmer_count >= 0), excluding planned maintenance windows (nightly restart / clean stop). Worst pool/camera among the selected ones. GO if within threshold at least 99% of the selected time range.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "min(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[$__range]) * 100) or vector(0)",
+          "legendFormat": "Status",
+          "refId": "A",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "min(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[$__range]) * 100) or vector(0)",
+          "legendFormat": "Compliance",
+          "refId": "B",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 99
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "range",
+                    "options": {
+                      "from": 99,
+                      "to": 100,
+                      "result": {
+                        "text": "GO"
+                      }
+                    }
+                  },
+                  {
+                    "type": "range",
+                    "options": {
+                      "from": 0,
+                      "to": 100,
+                      "result": {
+                        "text": "NO-GO"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix:% valid"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "vertical",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Detection FPS",
+      "description": "% of the selected time range with detection_fps above 0.9, excluding planned maintenance windows. Worst pool/camera among the selected ones. GO if within threshold at least 99% of the selected time range.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "min(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
+          "legendFormat": "Status",
+          "refId": "A",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "min(avg_over_time(((detection_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
+          "legendFormat": "Compliance",
+          "refId": "B",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 99
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "range",
+                    "options": {
+                      "from": 99,
+                      "to": 100,
+                      "result": {
+                        "text": "GO"
+                      }
+                    }
+                  },
+                  {
+                    "type": "range",
+                    "options": {
+                      "from": 0,
+                      "to": 100,
+                      "result": {
+                        "text": "NO-GO"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix:% > 0.9"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "vertical",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Decision FPS",
+      "description": "% of the selected time range with decisions_engine_fps above 0.9, excluding planned maintenance windows. Worst pool/camera among the selected ones. GO if within threshold at least 99% of the selected time range.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "min(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
+          "legendFormat": "Status",
+          "refId": "A",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "min(avg_over_time(((decisions_engine_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.9) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
+          "legendFormat": "Compliance",
+          "refId": "B",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 99
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "range",
+                    "options": {
+                      "from": 99,
+                      "to": 100,
+                      "result": {
+                        "text": "GO"
+                      }
+                    }
+                  },
+                  {
+                    "type": "range",
+                    "options": {
+                      "from": 0,
+                      "to": 100,
+                      "result": {
+                        "text": "NO-GO"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix:% > 0.9"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "vertical",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Frame Gap",
+      "description": "% of the selected time range with max_time_between_frames below 1s, excluding planned maintenance windows. Worst pool/camera among the selected ones. GO if within threshold at least 99% of the selected time range.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "min(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
+          "legendFormat": "Status",
+          "refId": "A",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "min(avg_over_time(((max_time_between_frames{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} < bool 1) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
+          "legendFormat": "Compliance",
+          "refId": "B",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 99
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "range",
+                    "options": {
+                      "from": 99,
+                      "to": 100,
+                      "result": {
+                        "text": "GO"
+                      }
+                    }
+                  },
+                  {
+                    "type": "range",
+                    "options": {
+                      "from": 0,
+                      "to": 100,
+                      "result": {
+                        "text": "NO-GO"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix:% < 1s"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "vertical",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Fuse Error",
+      "description": "% of the selected time range with mean_fuse_error at or below 1.5 (the 1.5 sentinel counts as healthy), excluding planned maintenance windows. Worst pool/camera among the selected ones. GO if within threshold at least 99% of the selected time range.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "min(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
+          "legendFormat": "Status",
+          "refId": "A",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "min(avg_over_time(((mean_fuse_error{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} <= bool 1.5) and on(site_name, pool_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(site_name, pool_name, environment) (cvs_maintenance_mode{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} == 0))[$__range:]) * 100) or vector(0)",
+          "legendFormat": "Compliance",
+          "refId": "B",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 99
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "range",
+                    "options": {
+                      "from": 99,
+                      "to": 100,
+                      "result": {
+                        "text": "GO"
+                      }
+                    }
+                  },
+                  {
+                    "type": "range",
+                    "options": {
+                      "from": 0,
+                      "to": 100,
+                      "result": {
+                        "text": "NO-GO"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "suffix:% <= 1.5"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "vertical",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 7,
       "type": "row",
       "title": "Swimmer Count",
       "collapsed": false,
@@ -215,7 +845,7 @@
       "panels": []
     },
     {
-      "id": 3,
+      "id": 8,
       "type": "timeseries",
       "title": "Swimmer Count (red marks = -1, excluding nightly restart)",
       "description": "Reported swimmer count per pool. Red points mark samples where the count is -1 (interrupted / invalid swimmer count) outside planned maintenance windows: the nightly restart and any other clean stop set cvs_maintenance_mode=1, which suppresses the red marks. The raw line still dips to -1 during those windows.",
@@ -327,7 +957,7 @@
       }
     },
     {
-      "id": 4,
+      "id": 9,
       "type": "bargauge",
       "title": "% Time with Valid Swimmer Count (excluding nightly restart)",
       "description": "Percentage of the selected time range with a valid swimmer count (swimmer_count >= 0), per pool. Planned maintenance windows \u2014 the nightly restart and any other clean stop (cvs_maintenance_mode=1) \u2014 are excluded from the calculation via the cvs:swimmer_valid:bool recording rule, matching the red marks on the graph.",
@@ -402,7 +1032,7 @@
       }
     },
     {
-      "id": 5,
+      "id": 10,
       "type": "row",
       "title": "Detection FPS",
       "collapsed": false,
@@ -415,7 +1045,7 @@
       "panels": []
     },
     {
-      "id": 6,
+      "id": 11,
       "type": "timeseries",
       "title": "Detection FPS (threshold 0.9)",
       "description": "Detection pipeline FPS per pool. Healthy: > 0.9 (target-normalized, ~1.0 when keeping up).",
@@ -501,7 +1131,7 @@
       }
     },
     {
-      "id": 7,
+      "id": 12,
       "type": "bargauge",
       "title": "% Time Detection FPS > 0.9 (per pool)",
       "description": "Percentage of the selected time range with detection_fps above 0.9. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
@@ -576,7 +1206,7 @@
       }
     },
     {
-      "id": 8,
+      "id": 13,
       "type": "row",
       "title": "Decision FPS",
       "collapsed": false,
@@ -589,7 +1219,7 @@
       "panels": []
     },
     {
-      "id": 9,
+      "id": 14,
       "type": "timeseries",
       "title": "Decision FPS (threshold 0.9)",
       "description": "Decision engine FPS per pool. Healthy: > 0.9.",
@@ -675,7 +1305,7 @@
       }
     },
     {
-      "id": 10,
+      "id": 15,
       "type": "bargauge",
       "title": "% Time Decision FPS > 0.9 (per pool)",
       "description": "Percentage of the selected time range with decisions_engine_fps above 0.9. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
@@ -750,7 +1380,7 @@
       }
     },
     {
-      "id": 11,
+      "id": 16,
       "type": "row",
       "title": "Max Time Between Frames (per camera)",
       "collapsed": false,
@@ -763,7 +1393,7 @@
       "panels": []
     },
     {
-      "id": 12,
+      "id": 17,
       "type": "timeseries",
       "title": "Max Time Between Frames per Camera (threshold 1s)",
       "description": "Largest gap between consecutive frame arrivals per camera (FrameSource, upstream of the Synchronizer). Healthy: < 1s. Simultaneous spikes on all cameras of a server indicate a host/network pause rather than a camera issue.",
@@ -849,7 +1479,7 @@
       }
     },
     {
-      "id": 13,
+      "id": 18,
       "type": "bargauge",
       "title": "% Time Frame Gap < 1s (per camera)",
       "description": "Percentage of the selected time range with max_time_between_frames below 1s, per camera. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
@@ -924,7 +1554,7 @@
       }
     },
     {
-      "id": 14,
+      "id": 19,
       "type": "row",
       "title": "Mean Fuse Error (per camera)",
       "collapsed": false,
@@ -937,7 +1567,7 @@
       "panels": []
     },
     {
-      "id": 15,
+      "id": 20,
       "type": "timeseries",
       "title": "Mean Fuse Error per Camera (threshold 1.5)",
       "description": "GTM multi-camera fuse error per camera. Healthy: <= 1.5. A value of exactly 1.5 is a sentinel meaning not enough multi-camera track overlap to measure and counts as healthy, so the red zone starts just above 1.5.",
@@ -1019,7 +1649,7 @@
       }
     },
     {
-      "id": 16,
+      "id": 21,
       "type": "bargauge",
       "title": "% Time Fuse Error <= 1.5 (per camera)",
       "description": "Percentage of the selected time range with mean_fuse_error at or below 1.5, per camera. The sentinel value 1.5 (insufficient overlap samples) counts as healthy. Planned maintenance windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded from the calculation.",
