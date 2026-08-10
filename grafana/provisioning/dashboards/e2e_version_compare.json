@@ -1,0 +1,692 @@
+{
+  "__comment": "E2E Version Compare \u2014 import into monitoring-stg (or an edge Grafana) to compare CVS versions over their measured windows. Pick the time range covering the runs to compare; the Version marker panel shows where the deployed tag changed (docker_version_tag is the tag float-encoded by ParamsCollector \u2014 exact tag names live in run_result.json). Cycle times are the gating KPIs; FPS is context only (services pace each other in file playback).",
+  "title": "E2E Version Compare \u2014 il-yok-hp-z2-installertest-001",
+  "uid": "e2e-version-compare",
+  "tags": [
+    "e2e",
+    "performance",
+    "cvs"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "label": "Datasource",
+        "current": {}
+      },
+      {
+        "name": "site",
+        "type": "query",
+        "label": "Site",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "query": "label_values(detection_cycle_time{environment=\"il-yok-hp-z2-installertest-001\"}, site_name)",
+        "refresh": 2,
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "current": {}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 11,
+      "type": "state-timeline",
+      "title": "Version over time (e2e runs \u2014 which version started when)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "e2e_run_info{environment=\"il-yok-hp-z2-installertest-001\"}",
+          "legendFormat": "{{version}}  (scene {{scene}})",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "mergeValues": true,
+        "showValue": "always",
+        "rowHeight": 0.85,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 70,
+            "lineWidth": 0
+          }
+        },
+        "overrides": []
+      },
+      "description": "Fed by e2e_run_info{version,scene} pushed by run_window.sh at each window start (version is a label, so tags like test-tag are readable \u2014 docker_version_tag float-encodes every non-date tag to -1.0)."
+    },
+    {
+      "id": 17,
+      "type": "timeseries",
+      "title": "Scene load \u2014 swimmers & cameras",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "fillOpacity": 8
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(swimmer_count{environment=\"il-yok-hp-z2-installertest-001\",site_name=~\"$site\"} >= 0)",
+          "legendFormat": "swimmers"
+        },
+        {
+          "refId": "B",
+          "expr": "count(count by (camera_id) (camera_ping{environment=\"il-yok-hp-z2-installertest-001\",site_name=~\"$site\"}))",
+          "legendFormat": "cameras"
+        }
+      ],
+      "description": "Tracked swimmers + camera count during the run \u2014 the two load axes of a scene (per-swimmer CTM/GTM/DE load vs per-camera decode/detection load). -1 swimmer warmup sentinel excluded."
+    },
+    {
+      "id": 18,
+      "type": "timeseries",
+      "title": "Alerts over time (by type)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 70,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "barAlignment": 0
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (alert_type) (increase(Alerts{environment=\"il-yok-hp-z2-installertest-001\",site_name=~\"$site\"}[$__rate_interval]))",
+          "legendFormat": "{{alert_type}}"
+        }
+      ],
+      "description": "Alerts raised by the DecisionEngine during the run, stacked per alert_type (metric `Alerts` \u2014 cumulative per-type counter from alert_decision_maker.report_metric, reset to 0 on DE start; increase() absorbs the resets). A deterministic scene should alert at a steady rate \u2014 a version that changes this rate changed detection/tracking behaviour, not just cycle times."
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Detection cycle time",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 17
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "fillOpacity": 8,
+            "thresholdsStyle": {
+              "mode": "dashed"
+            },
+            "axisSoftMax": 1.1
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "detection_cycle_time{environment=\"il-yok-hp-z2-installertest-001\",site_name=~\"$site\"}",
+          "legendFormat": "{{environment}} {{site_name}}/{{pool_name}}"
+        }
+      ],
+      "description": " Dashed line at 1s = maximum allowed cycle time."
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "CTM cycle time",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 17
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "fillOpacity": 8,
+            "thresholdsStyle": {
+              "mode": "dashed"
+            },
+            "axisSoftMax": 1.1
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "ctm_cycle_time{environment=\"il-yok-hp-z2-installertest-001\",site_name=~\"$site\"}",
+          "legendFormat": "{{environment}} {{site_name}}/{{pool_name}}"
+        }
+      ],
+      "description": " Dashed line at 1s = maximum allowed cycle time."
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "GTM cycle time",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 25
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "fillOpacity": 8,
+            "thresholdsStyle": {
+              "mode": "dashed"
+            },
+            "axisSoftMax": 1.1
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "gtm_cycle_time{environment=\"il-yok-hp-z2-installertest-001\",site_name=~\"$site\"}",
+          "legendFormat": "{{environment}} {{site_name}}/{{pool_name}}"
+        }
+      ],
+      "description": " Dashed line at 1s = maximum allowed cycle time."
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "DecisionEngine cycle time",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 25
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "fillOpacity": 8,
+            "thresholdsStyle": {
+              "mode": "dashed"
+            },
+            "axisSoftMax": 1.1
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "de_cycle_time{environment=\"il-yok-hp-z2-installertest-001\",site_name=~\"$site\"}",
+          "legendFormat": "{{environment}} {{site_name}}/{{pool_name}}"
+        }
+      ],
+      "description": " Dashed line at 1s = maximum allowed cycle time."
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Host RAM used",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 33
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "node_memory_MemTotal_bytes{environment=\"il-yok-hp-z2-installertest-001\"} - node_memory_MemAvailable_bytes{environment=\"il-yok-hp-z2-installertest-001\"}",
+          "legendFormat": "{{environment}} used"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "GPU memory used",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 33
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "mbytes",
+          "custom": {
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "DCGM_FI_DEV_FB_USED{environment=\"il-yok-hp-z2-installertest-001\"}",
+          "legendFormat": "{{environment}} FB used"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "GPU utilisation",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 41
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "max": 100,
+          "custom": {
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "DCGM_FI_DEV_GPU_UTIL{environment=\"il-yok-hp-z2-installertest-001\"}",
+          "legendFormat": "{{environment}} GPU util"
+        },
+        {
+          "refId": "B",
+          "expr": "DCGM_FI_DEV_MEM_COPY_UTIL{environment=\"il-yok-hp-z2-installertest-001\"}",
+          "legendFormat": "{{environment}} mem-copy util"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "RSS \u2014 detection",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 4,
+        "x": 0,
+        "y": 49
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "max(container_memory_rss{environment=\"il-yok-hp-z2-installertest-001\",name=~\"lynxight_detection_.*\"})",
+          "legendFormat": "detection",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "max",
+            "mean"
+          ]
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "RSS \u2014 ctm",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 5,
+        "x": 4,
+        "y": 49
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "max(container_memory_rss{environment=\"il-yok-hp-z2-installertest-001\",name=~\"lynxight_ctm_.*\"})",
+          "legendFormat": "ctm",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "max",
+            "mean"
+          ]
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "RSS \u2014 gtm",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 5,
+        "x": 9,
+        "y": 49
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "max(container_memory_rss{environment=\"il-yok-hp-z2-installertest-001\",name=~\"lynxight_gtm_.*\"})",
+          "legendFormat": "gtm",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "max",
+            "mean"
+          ]
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "RSS \u2014 decision_engine",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 5,
+        "x": 14,
+        "y": 49
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "max(container_memory_rss{environment=\"il-yok-hp-z2-installertest-001\",name=~\"lynxight_decision_engine_.*\"})",
+          "legendFormat": "decision_engine",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "max",
+            "mean"
+          ]
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "RSS \u2014 video_stream",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 5,
+        "x": 19,
+        "y": 49
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "fillOpacity": 8
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "max(container_memory_rss{environment=\"il-yok-hp-z2-installertest-001\",name=~\"lynxight_video_stream_.*\"})",
+          "legendFormat": "video_stream",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "max",
+            "mean"
+          ]
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    }
+  ]
+}
