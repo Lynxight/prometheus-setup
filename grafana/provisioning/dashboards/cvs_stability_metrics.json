@@ -24,7 +24,7 @@
   "editable": true,
   "refresh": "1h",
   "time": {
-    "from": "now-30d",
+    "from": "now-7d",
     "to": "now"
   },
   "templating": {
@@ -237,7 +237,7 @@
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
       },
-      "description": "Percentage of the selected range during which EVERY camera on the pool reported actual_fps > 0.5 (recording rule cvs:cameras_up:bool; any single dead camera counts the whole pool as down, because the synchronizer cannot form frame sets without it). Planned maintenance windows (cvs_maintenance_mode=1) are excluded. Compare with the validity gauge below: when the two match, the invalid time is camera connectivity, not software.",
+      "description": "Percentage of the selected range during which EVERY camera on the pool reported actual_fps > 0.5 (min over cameras of actual_fps, evaluated inline on a 15m grid; any single dead camera counts the whole pool as down, because the synchronizer cannot form frame sets without it). Planned maintenance windows (cvs_maintenance_mode=1) are excluded. Compare with the validity gauge below: when the two match, the invalid time is camera connectivity, not software.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -318,7 +318,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time((cvs:cameras_up:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m]) * 100)",
+          "expr": "avg(avg_over_time((((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) and on(pool_name, site_name, environment) (cvs_maintenance_mode == 0)) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:15m]) * 100)",
           "legendFormat": "OVERALL AVERAGE",
           "refId": "A",
           "instant": true
@@ -329,7 +329,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sort(avg_over_time((cvs:cameras_up:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m]) * 100)",
+          "expr": "sort(avg_over_time((((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) and on(pool_name, site_name, environment) (cvs_maintenance_mode == 0)) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:15m]) * 100)",
           "legendFormat": "{{site_name}} / {{pool_name}}",
           "refId": "B",
           "instant": true
@@ -343,7 +343,7 @@
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
       },
-      "description": "Of the time ALL cameras on the pool were delivering frames, the percentage during which the pipeline produced a valid swimmer count (recording rule cvs:swimmer_valid_cameras_up:bool divided by cvs:cameras_up:bool, both on a 5m grid). This isolates software / host faults (algo container crashes, GPU, stalls) from camera connectivity. Blank or NaN = the cameras were never all up in the selected range, so software uptime is undefined for that pool. Planned maintenance windows are excluded.",
+      "description": "Of the time ALL cameras on the pool were delivering frames, the percentage during which the pipeline produced a valid swimmer count (validity samples taken only while all cameras were up, divided by the all-cameras-up samples, both evaluated inline on a 15m grid). This isolates software / host faults (algo container crashes, GPU, stalls) from camera connectivity. Blank or NaN = the cameras were never all up in the selected range, so software uptime is undefined for that pool. Planned maintenance windows are excluded.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -436,7 +436,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum(sum_over_time((cvs:swimmer_valid_cameras_up:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m])) / sum(sum_over_time((cvs:cameras_up:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m])) * 100",
+          "expr": "clamp_max(sum(sum_over_time(((cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 1)) and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:15m])) / sum(sum_over_time((((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) and on(pool_name, site_name, environment) (cvs_maintenance_mode == 0)) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:15m])) * 100, 100)",
           "legendFormat": "OVERALL AVERAGE",
           "refId": "A",
           "instant": true
@@ -447,7 +447,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sort(sum by (pool_name, site_name, environment) (sum_over_time((cvs:swimmer_valid_cameras_up:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m])) / sum by (pool_name, site_name, environment) (sum_over_time((cvs:cameras_up:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m])) * 100)",
+          "expr": "sort(clamp_max(sum by (pool_name, site_name, environment) (sum_over_time(((cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 1)) and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:15m])) / sum by (pool_name, site_name, environment) (sum_over_time((((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) and on(pool_name, site_name, environment) (cvs_maintenance_mode == 0)) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:15m])) * 100, 100))",
           "legendFormat": "{{site_name}} / {{pool_name}}",
           "refId": "B",
           "instant": true
@@ -566,7 +566,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg(avg_over_time((cvs:cameras_up:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[1d:5m]) * 100)",
+          "expr": "avg(avg_over_time((((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) and on(pool_name, site_name, environment) (cvs_maintenance_mode == 0)) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[1d:15m]) * 100)",
           "legendFormat": "Camera availability %",
           "refId": "B",
           "interval": "1d",
@@ -578,7 +578,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum(sum_over_time((cvs:swimmer_valid_cameras_up:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[1d:5m])) / sum(sum_over_time((cvs:cameras_up:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[1d:5m])) * 100",
+          "expr": "clamp_max(sum(sum_over_time(((cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 1)) and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[1d:15m])) / sum(sum_over_time((((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) and on(pool_name, site_name, environment) (cvs_maintenance_mode == 0)) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[1d:15m])) * 100, 100)",
           "legendFormat": "Software uptime % (cameras up)",
           "refId": "C",
           "interval": "1d",
@@ -735,7 +735,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sort(avg_over_time(((actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.5) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m]) * 100) < 99",
+          "expr": "sort(avg_over_time(((actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} > bool 0.5) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:15m]) * 100) < 99",
           "legendFormat": "{{site_name}} / {{pool_name}} / cam {{camera_id}}",
           "refId": "A",
           "format": "table",
