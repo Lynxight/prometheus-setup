@@ -37,22 +37,6 @@ deleting its dashboard is caught; an off-convention generator is discoverable
 unnoticed. Prefer the convention; reach for an off-convention name only when
 you have a reason.
 
-### Currently generated
+### Before committing
 
-| Dashboard JSON | Generator |
-|----------------|-----------|
-| `grafana/provisioning/dashboards/pool_health_metrics.json` | `helpers/gen_pool_health_dashboard.py` |
-
-### Enforcement
-
-`helpers/check_generated_dashboards.py` re-runs every generator (each
-`helpers/gen_*.py`, plus any script named by a dashboard's `"__generated_by"`)
-and fails if a committed dashboard has drifted from its generator's output, or
-references a generator that is missing or outside the repo. CI runs it on
-every PR
-(`.github/workflows/check-generated-dashboards.yml`). To catch drift locally
-before you push, install the commit hook once per clone:
-
-```bash
-pip install pre-commit && pre-commit install
-```
+Install the commit hook once per clone: `pip install pre-commit && pre-commit install`.

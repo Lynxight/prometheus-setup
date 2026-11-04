@@ -1,0 +1,447 @@
+{
+  "__generated_by": "helpers/gen_watch_nightly_gap_dashboard.py",
+  "__generated_warning": "GENERATED FILE \u2014 do not edit by hand. Edit the generator and re-run: python3 helpers/gen_watch_nightly_gap_dashboard.py",
+  "title": "Watch metrics: nightly gap explained",
+  "uid": "watch-nightly-gap",
+  "id": null,
+  "description": "Why watch metrics disappear from Grafana at night and return in the morning: the pushgateway on the CVS keeps a silent watch's last value until the nightly restart clears it (the CVS stack stops at 03:16 and starts again at 03:20 site-local). One site at a time. Times are in your browser's time zone. AT-1914.",
+  "tags": [
+    "watch",
+    "pushgateway"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "schemaVersion": 38,
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "site_name",
+        "label": "site",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "definition": "label_values(watch_ping, site_name)",
+        "query": {
+          "query": "label_values(watch_ping, site_name)",
+          "refId": "site"
+        },
+        "refresh": 2,
+        "sort": 1,
+        "includeAll": false,
+        "multi": false,
+        "current": {}
+      },
+      {
+        "name": "environment",
+        "label": "CVS",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "hide": 2,
+        "definition": "label_values(watch_ping{site_name=\"$site_name\"}, environment)",
+        "query": {
+          "query": "label_values(watch_ping{site_name=\"$site_name\"}, environment)",
+          "refId": "environment"
+        },
+        "refresh": 2,
+        "sort": 1,
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Watches: in Grafana vs. actually reporting",
+      "description": "Counts watches, on or off the charger, whose last status is still held by the pushgateway on the CVS, so Grafana still draws it. The pushgateway keeps the last value until the nightly restart clears it (the CVS stack stops at 03:16 and starts again at 03:20 site-local). Reporting = the watch sent a status in the last 15 minutes (push_time_seconds); the green area is the part of those whose latest status was sent from the charger. The blue shaded area is stale: drawn in Grafana, but silent. The gray block marks the pushgateway restart on this site's CVS servers. The Watch Dashboard's Watch Connected, Wifi and Battery panels show only watches off the charger; the same pushgateway behaviour applies to them.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisSoftMin": 0,
+            "lineInterpolation": "stepAfter",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "In Grafana (held by pushgateway)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#2a78d6"
+                }
+              },
+              {
+                "id": "custom.fillBelowTo",
+                "value": "Reporting"
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 12
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Reporting"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#eb6834"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "of which on the charger"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1baf7a"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 20
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Nightly restart (pushgateway)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8a8986"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 30
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 0
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "hidden"
+              },
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "tooltip": true,
+                  "viz": false,
+                  "legend": false
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "count(count by (watch) (push_time_seconds{name=\"watch_ping\", site_name=\"$site_name\"})) or vector(0)",
+          "legendFormat": "In Grafana (held by pushgateway)",
+          "range": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "count(count by (watch) ((time() - push_time_seconds{name=\"watch_ping\", site_name=\"$site_name\"}) < 900)) or vector(0)",
+          "legendFormat": "Reporting",
+          "range": true
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "count((max by (watch) (push_time_seconds{name=\"watch_ping\", site_name=\"$site_name\", is_charging=\"True\"}) == on (watch) max by (watch) (push_time_seconds{name=\"watch_ping\", site_name=\"$site_name\"})) and on (watch) ((time() - max by (watch) (push_time_seconds{name=\"watch_ping\", site_name=\"$site_name\"})) < 900)) or vector(0)",
+          "legendFormat": "of which on the charger",
+          "range": true
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "max((time() - container_start_time_seconds{name=\"pushgateway\", environment=~\"$environment\"}) < (600 + $__interval_ms / 1000)) * 0 + 1",
+          "legendFormat": "Nightly restart (pushgateway)",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Watch reports received",
+      "description": "Status messages from watches (watch_ping increase) per bar: 15 minutes, wider on long time ranges. A watch left on its charger keeps reporting through the night, including across the nightly restart. The first report after a series appears (e.g. a watch's first report after the restart) is not counted, because increase() needs an earlier sample.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 24,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 85,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisSoftMin": 0,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Off the charger"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#eb6834"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "On the charger"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1baf7a"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "sum by (state) (label_replace(label_replace(increase(watch_ping{site_name=\"$site_name\"}[$__interval]), \"state\", \"On the charger\", \"is_charging\", \"True\"), \"state\", \"Off the charger\", \"is_charging\", \"False\"))",
+          "legendFormat": "{{state}}",
+          "range": true,
+          "interval": "15m"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Hours since each watch's last report",
+      "description": "Hours since each watch's latest status, on or off the charger (push_time_seconds). A rising line = the watch is silent but still drawn in Grafana. The line ends when the nightly restart clears the pushgateway.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 24,
+        "h": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "decimals": 1,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisSoftMin": 0,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "min by (watch) ((time() - push_time_seconds{name=\"watch_ping\", site_name=\"$site_name\"}) / 3600)",
+          "legendFormat": "{{watch}}",
+          "range": true
+        }
+      ]
+    }
+  ]
+}
