@@ -37,13 +37,6 @@ deleting its dashboard is caught; an off-convention generator is discoverable
 unnoticed. Prefer the convention; reach for an off-convention name only when
 you have a reason.
 
-### Currently generated
-
-| Dashboard JSON | Generator |
-|----------------|-----------|
-| `grafana/provisioning/dashboards/pool_health_metrics.json` | `helpers/gen_pool_health_dashboard.py` |
-| `grafana/provisioning/dashboards/watch_nightly_gap.json` | `helpers/gen_watch_nightly_gap_dashboard.py` |
-
 ### Enforcement
 
 `helpers/check_generated_dashboards.py` re-runs every generator (each
