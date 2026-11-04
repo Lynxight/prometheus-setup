@@ -42,6 +42,7 @@ you have a reason.
 | Dashboard JSON | Generator |
 |----------------|-----------|
 | `grafana/provisioning/dashboards/pool_health_metrics.json` | `helpers/gen_pool_health_dashboard.py` |
+| `grafana/provisioning/dashboards/watch_nightly_gap.json` | `helpers/gen_watch_nightly_gap_dashboard.py` |
 
 ### Enforcement
 
