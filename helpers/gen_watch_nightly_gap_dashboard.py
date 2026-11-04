@@ -16,8 +16,9 @@ import pathlib
 
 # The Prometheus datasource provisioned with a fixed uid in grafana/provisioning/datasources/datasource.yml.
 DS = {"type": "prometheus", "uid": "PBFA97CFB590B2093"}
-ANY_STATE = 'name="watch_ping", site_name="$site_name"'
-OFF_CHARGER = ANY_STATE + ', is_charging="False"'
+# All watches, on or off the charger: each (watch, is_charging, ...) label set is its own pushgateway group,
+# so queries collapse them per watch.
+WATCH_PING = 'name="watch_ping", site_name="$site_name"'
 # A watch counts as reporting if its last push is younger than this.
 REPORTING_WINDOW_SEC = 900
 # The restart marker covers this long after the pushgateway starts, widened by one query step so a
@@ -27,8 +28,8 @@ RESTART_MARKER_SEC = 600
 BLUE, ORANGE, GREEN, GRAY = "#2a78d6", "#eb6834", "#1baf7a", "#8a8986"
 
 IN_GRAFANA = "In Grafana (held by pushgateway)"
-REPORTING_ANY = "Reporting, on or off the charger"
-REPORTING_OFF = "Reporting off the charger"
+REPORTING = "Reporting"
+ON_CHARGER = "of which on the charger"
 RESTART = "Nightly restart (pushgateway)"
 RESTART_TIMES = "the CVS stack stops at 03:16 and starts again at 03:20 site-local"
 
@@ -64,30 +65,32 @@ def timeseries(pid, title, desc, y, h, targets, custom, overrides, unit="none", 
 
 
 in_grafana_vs_reporting = timeseries(
-    1, "Watches off the charger: in Grafana vs. actually reporting",
-    "Counts watches whose last off-the-charger status is still held by the pushgateway on the CVS, so Grafana "
-    "(e.g. the Watch Dashboard) still draws it. The pushgateway keeps the last value until the nightly restart "
-    f"clears it ({RESTART_TIMES}). Reporting = the watch sent a status in the last "
-    f"{REPORTING_WINDOW_SEC // 60} minutes (push_time_seconds). Blue shading = drawn in Grafana but silent. "
-    "Green shading = put on the charger: its off-the-charger value is frozen in Grafana, but it is still "
-    "reporting, as on the charger. The gray block marks the pushgateway restart on this site's CVS servers.",
+    1, "Watches: in Grafana vs. actually reporting",
+    "Counts watches, on or off the charger, whose last status is still held by the pushgateway on the CVS, so "
+    "Grafana still draws it. The pushgateway keeps the last value until the nightly restart clears it "
+    f"({RESTART_TIMES}). Reporting = the watch sent a status in the last {REPORTING_WINDOW_SEC // 60} minutes "
+    "(push_time_seconds); the green area is the part of those whose latest status was sent from the charger. "
+    "The blue shaded area is stale: drawn in Grafana, but silent. The gray block marks the "
+    "pushgateway restart on this site's CVS servers. The Watch Dashboard's Watch Connected, Wifi and Battery "
+    "panels show only watches off the charger; the same pushgateway behaviour applies to them.",
     0, 10,
-    [target("A", f"count(count by (watch) (push_time_seconds{{{OFF_CHARGER}}})) or vector(0)", IN_GRAFANA),
-     target("B", f"count(count by (watch) (push_time_seconds{{{OFF_CHARGER}}}) and on (watch) "
-                 f"(min by (watch) (time() - push_time_seconds{{{ANY_STATE}}}) < {REPORTING_WINDOW_SEC})) "
-                 "or vector(0)", REPORTING_ANY),
-     target("C", f"count(count by (watch) ((time() - push_time_seconds{{{OFF_CHARGER}}}) "
-                 f"< {REPORTING_WINDOW_SEC})) or vector(0)", REPORTING_OFF),
+    [target("A", f"count(count by (watch) (push_time_seconds{{{WATCH_PING}}})) or vector(0)", IN_GRAFANA),
+     target("B", f"count(count by (watch) ((time() - push_time_seconds{{{WATCH_PING}}}) "
+                 f"< {REPORTING_WINDOW_SEC})) or vector(0)", REPORTING),
+     # Reporting watches whose most recent push is in the on-charger group.
+     target("D", f'count((max by (watch) (push_time_seconds{{{WATCH_PING}, is_charging="True"}}) '
+                 f"== on (watch) max by (watch) (push_time_seconds{{{WATCH_PING}}})) "
+                 f"and on (watch) ((time() - max by (watch) (push_time_seconds{{{WATCH_PING}}})) "
+                 f"< {REPORTING_WINDOW_SEC})) or vector(0)", ON_CHARGER),
      # 1 shortly after a pushgateway (re)start on any of the site's CVS servers.
-     target("D", 'max((time() - container_start_time_seconds{name="pushgateway", environment=~"$environment"}) '
+     target("C", 'max((time() - container_start_time_seconds{name="pushgateway", environment=~"$environment"}) '
                  f'< ({RESTART_MARKER_SEC} + $__interval_ms / 1000)) * 0 + 1', RESTART)],
     {},
-    [fixed_color(IN_GRAFANA, BLUE, [{"id": "custom.fillBelowTo", "value": REPORTING_ANY},
+    [fixed_color(IN_GRAFANA, BLUE, [{"id": "custom.fillBelowTo", "value": REPORTING},
                                     {"id": "custom.fillOpacity", "value": 12}]),
-     fixed_color(REPORTING_ANY, GREEN, [{"id": "custom.fillBelowTo", "value": REPORTING_OFF},
-                                        {"id": "custom.fillOpacity", "value": 15},
-                                        {"id": "custom.lineWidth", "value": 1}]),
-     fixed_color(REPORTING_OFF, ORANGE),
+     fixed_color(REPORTING, ORANGE),
+     fixed_color(ON_CHARGER, GREEN, [{"id": "custom.fillOpacity", "value": 20},
+                                     {"id": "custom.lineWidth", "value": 1}]),
      # A filled step line instead of bars: bars are drawn per step with gaps between them.
      fixed_color(RESTART, GRAY, [{"id": "custom.fillOpacity", "value": 30},
                                  {"id": "custom.lineWidth", "value": 0},
@@ -116,13 +119,10 @@ reports_received = timeseries(
 
 hours_since_report = timeseries(
     3, "Hours since each watch's last report",
-    "For each watch whose off-the-charger value is held in Grafana: hours since its latest status, on or off "
-    "the charger (push_time_seconds). A watch put on the charger stays near 0 while it reports; a rising line "
-    "= the watch is silent but still drawn in Grafana. The line ends when the nightly restart clears the "
-    "pushgateway.",
+    "Hours since each watch's latest status, on or off the charger (push_time_seconds). A rising line = the "
+    "watch is silent but still drawn in Grafana. The line ends when the nightly restart clears the pushgateway.",
     18, 9,
-    [target("A", f"min by (watch) ((time() - push_time_seconds{{{ANY_STATE}}}) / 3600) "
-                 f"and on (watch) push_time_seconds{{{OFF_CHARGER}}}", "{{watch}}")],
+    [target("A", f"min by (watch) ((time() - push_time_seconds{{{WATCH_PING}}}) / 3600)", "{{watch}}")],
     {"lineInterpolation": "linear"},
     [],
     unit="h",
