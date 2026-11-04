@@ -4,7 +4,7 @@
   "title": "Watch metrics: nightly gap explained",
   "uid": "watch-nightly-gap",
   "id": null,
-  "description": "Why watch metrics disappear from Grafana at 03:20 local and return in the morning: the pushgateway on the CVS keeps a silent watch's last value until the nightly restart clears it. One site at a time. Times are in your browser's time zone; the restart is at 03:20 site-local time. AT-1914.",
+  "description": "Why watch metrics disappear from Grafana at night and return in the morning: the pushgateway on the CVS keeps a silent watch's last value until the nightly restart clears it (the CVS stack stops at 03:16 and starts again at 03:20 site-local). One site at a time. Times are in your browser's time zone. AT-1914.",
   "tags": [
     "watch",
     "pushgateway"
@@ -52,6 +52,34 @@
         "includeAll": false,
         "multi": false,
         "current": {}
+      },
+      {
+        "name": "environment",
+        "label": "CVS",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PBFA97CFB590B2093"
+        },
+        "hide": 2,
+        "definition": "label_values(watch_ping{site_name=\"$site_name\"}, environment)",
+        "query": {
+          "query": "label_values(watch_ping{site_name=\"$site_name\"}, environment)",
+          "refId": "environment"
+        },
+        "refresh": 2,
+        "sort": 1,
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
       }
     ]
   },
@@ -60,7 +88,7 @@
       "id": 1,
       "type": "timeseries",
       "title": "Watches off the charger: in Grafana vs. actually reporting",
-      "description": "In Grafana = the pushgateway on the CVS still holds a value for the watch, so Grafana (e.g. the Watch Dashboard) still draws it; the pushgateway keeps the last value until the nightly restart (03:20 site-local) clears it. Reporting = the watch sent a status in the last 15 minutes (push_time_seconds). The shaded area is stale: drawn in Grafana, but silent. The gray bar marks the pushgateway restart on this site's CVS (nightly 03:20 site-local; first 10 minutes after the restart).",
+      "description": "Counts watches whose last off-the-charger status is still held by the pushgateway on the CVS, so Grafana (e.g. the Watch Dashboard) still draws it. The pushgateway keeps the last value until the nightly restart clears it (the CVS stack stops at 03:16 and starts again at 03:20 site-local). Reporting = the watch sent a status in the last 15 minutes (push_time_seconds). Blue shading = drawn in Grafana but silent. Green shading = put on the charger: its off-the-charger value is frozen in Grafana, but it is still reporting, as on the charger. The gray block marks the pushgateway restart on this site's CVS servers.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -108,7 +136,7 @@
               },
               {
                 "id": "custom.fillBelowTo",
-                "value": "Reporting (last 15 min)"
+                "value": "Reporting, on or off the charger"
               },
               {
                 "id": "custom.fillOpacity",
@@ -119,7 +147,34 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Reporting (last 15 min)"
+              "options": "Reporting, on or off the charger"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#1baf7a"
+                }
+              },
+              {
+                "id": "custom.fillBelowTo",
+                "value": "Reporting off the charger"
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 15
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Reporting off the charger"
             },
             "properties": [
               {
@@ -145,12 +200,8 @@
                 }
               },
               {
-                "id": "custom.drawStyle",
-                "value": "bars"
-              },
-              {
                 "id": "custom.fillOpacity",
-                "value": 100
+                "value": 30
               },
               {
                 "id": "custom.lineWidth",
@@ -159,6 +210,14 @@
               {
                 "id": "custom.axisPlacement",
                 "value": "hidden"
+              },
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "tooltip": true,
+                  "viz": false,
+                  "legend": false
+                }
               },
               {
                 "id": "min",
@@ -202,8 +261,8 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "count(count by (watch) ((time() - push_time_seconds{name=\"watch_ping\", site_name=\"$site_name\", is_charging=\"False\"}) < 900)) or vector(0)",
-          "legendFormat": "Reporting (last 15 min)",
+          "expr": "count(count by (watch) (push_time_seconds{name=\"watch_ping\", site_name=\"$site_name\", is_charging=\"False\"}) and on (watch) (min by (watch) (time() - push_time_seconds{name=\"watch_ping\", site_name=\"$site_name\"}) < 900)) or vector(0)",
+          "legendFormat": "Reporting, on or off the charger",
           "range": true
         },
         {
@@ -213,7 +272,18 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "max(((time() - max by (environment) (container_start_time_seconds{name=\"pushgateway\"})) < 600) and on (environment) group by (environment) (max_over_time(watch_ping{site_name=\"$site_name\"}[1d]))) * 0 + 1",
+          "expr": "count(count by (watch) ((time() - push_time_seconds{name=\"watch_ping\", site_name=\"$site_name\", is_charging=\"False\"}) < 900)) or vector(0)",
+          "legendFormat": "Reporting off the charger",
+          "range": true
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "max((time() - container_start_time_seconds{name=\"pushgateway\", environment=~\"$environment\"}) < (600 + $__interval_ms / 1000)) * 0 + 1",
           "legendFormat": "Nightly restart (pushgateway)",
           "range": true
         }
@@ -222,8 +292,8 @@
     {
       "id": 2,
       "type": "timeseries",
-      "title": "Watch reports received per 15 min",
-      "description": "Status messages from watches (watch_ping increase). A watch left on its charger keeps reporting through the night, including across the nightly restart.",
+      "title": "Watch reports received",
+      "description": "Status messages from watches (watch_ping increase) per bar: 15 minutes, wider on long time ranges. A watch left on its charger keeps reporting through the night, including across the nightly restart. The first report after a series appears (e.g. a watch's first report after the restart) is not counted, because increase() needs an earlier sample.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -307,7 +377,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (state) (label_replace(label_replace(increase(watch_ping{site_name=\"$site_name\"}[15m]), \"state\", \"On the charger\", \"is_charging\", \"True\"), \"state\", \"Off the charger\", \"is_charging\", \"False\"))",
+          "expr": "sum by (state) (label_replace(label_replace(increase(watch_ping{site_name=\"$site_name\"}[$__interval]), \"state\", \"On the charger\", \"is_charging\", \"True\"), \"state\", \"Off the charger\", \"is_charging\", \"False\"))",
           "legendFormat": "{{state}}",
           "range": true,
           "interval": "15m"
@@ -317,8 +387,8 @@
     {
       "id": 3,
       "type": "timeseries",
-      "title": "Hours since each watch's last report (off the charger)",
-      "description": "time() - push_time_seconds per watch. A rising line = the watch is silent but still drawn in Grafana. The line ends when the nightly restart clears the pushgateway.",
+      "title": "Hours since each watch's last report",
+      "description": "For each watch whose off-the-charger value is held in Grafana: hours since its latest status, on or off the charger (push_time_seconds). A watch put on the charger stays near 0 while it reports; a rising line = the watch is silent but still drawn in Grafana. The line ends when the nightly restart clears the pushgateway.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -371,7 +441,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "min by (watch) ((time() - push_time_seconds{name=\"watch_ping\", site_name=\"$site_name\", is_charging=\"False\"}) / 3600)",
+          "expr": "min by (watch) ((time() - push_time_seconds{name=\"watch_ping\", site_name=\"$site_name\"}) / 3600) and on (watch) push_time_seconds{name=\"watch_ping\", site_name=\"$site_name\", is_charging=\"False\"}",
           "legendFormat": "{{watch}}",
           "range": true
         }

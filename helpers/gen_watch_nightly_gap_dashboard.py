@@ -16,13 +16,21 @@ import pathlib
 
 # The Prometheus datasource provisioned with a fixed uid in grafana/provisioning/datasources/datasource.yml.
 DS = {"type": "prometheus", "uid": "PBFA97CFB590B2093"}
-OFF_CHARGER = 'name="watch_ping", site_name="$site_name", is_charging="False"'
+ANY_STATE = 'name="watch_ping", site_name="$site_name"'
+OFF_CHARGER = ANY_STATE + ', is_charging="False"'
+# A watch counts as reporting if its last push is younger than this.
+REPORTING_WINDOW_SEC = 900
+# The restart marker covers this long after the pushgateway starts, widened by one query step so a
+# coarse step on a long time range still lands inside it.
+RESTART_MARKER_SEC = 600
 # Validated categorical slots 1-3 plus a neutral for the restart marker.
-BLUE, ORANGE, AQUA, GRAY = "#2a78d6", "#eb6834", "#1baf7a", "#8a8986"
+BLUE, ORANGE, GREEN, GRAY = "#2a78d6", "#eb6834", "#1baf7a", "#8a8986"
 
 IN_GRAFANA = "In Grafana (held by pushgateway)"
-REPORTING = "Reporting (last 15 min)"
+REPORTING_ANY = "Reporting, on or off the charger"
+REPORTING_OFF = "Reporting off the charger"
 RESTART = "Nightly restart (pushgateway)"
+RESTART_TIMES = "the CVS stack stops at 03:16 and starts again at 03:20 site-local"
 
 
 def target(ref, expr, legend, interval=None):
@@ -38,7 +46,7 @@ def fixed_color(name, color, extra=()):
             "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": color}}, *extra]}
 
 
-def timeseries(pid, title, desc, y, h, targets, custom, overrides, unit="none", stack=False):
+def timeseries(pid, title, desc, y, h, targets, custom, overrides, unit="none", decimals=0, stack=False):
     custom_all = {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 0, "showPoints": "never",
                   "spanNulls": False, "axisSoftMin": 0, "lineInterpolation": "stepAfter",
                   "stacking": {"mode": "normal" if stack else "none", "group": "A"}}
@@ -46,7 +54,7 @@ def timeseries(pid, title, desc, y, h, targets, custom, overrides, unit="none", 
     return {
         "id": pid, "type": "timeseries", "title": title, "description": desc, "datasource": DS,
         "gridPos": {"x": 0, "y": y, "w": 24, "h": h},
-        "fieldConfig": {"defaults": {"unit": unit, "decimals": 0 if unit == "none" else 1,
+        "fieldConfig": {"defaults": {"unit": unit, "decimals": decimals,
                                      "color": {"mode": "palette-classic"}, "custom": custom_all},
                         "overrides": overrides},
         "options": {"legend": {"displayMode": "list", "placement": "right", "showLegend": True},
@@ -57,56 +65,68 @@ def timeseries(pid, title, desc, y, h, targets, custom, overrides, unit="none", 
 
 in_grafana_vs_reporting = timeseries(
     1, "Watches off the charger: in Grafana vs. actually reporting",
-    "In Grafana = the pushgateway on the CVS still holds a value for the watch, so Grafana (e.g. the Watch "
-    "Dashboard) still draws it; the pushgateway keeps the last value until the nightly restart (03:20 site-local) clears "
-    "it. Reporting = the watch sent a status in the last 15 minutes (push_time_seconds). The shaded area is "
-    "stale: drawn in Grafana, but silent. The gray bar marks the pushgateway restart on this site's CVS "
-    "(nightly 03:20 site-local; first 10 minutes after the restart).",
+    "Counts watches whose last off-the-charger status is still held by the pushgateway on the CVS, so Grafana "
+    "(e.g. the Watch Dashboard) still draws it. The pushgateway keeps the last value until the nightly restart "
+    f"clears it ({RESTART_TIMES}). Reporting = the watch sent a status in the last "
+    f"{REPORTING_WINDOW_SEC // 60} minutes (push_time_seconds). Blue shading = drawn in Grafana but silent. "
+    "Green shading = put on the charger: its off-the-charger value is frozen in Grafana, but it is still "
+    "reporting, as on the charger. The gray block marks the pushgateway restart on this site's CVS servers.",
     0, 10,
     [target("A", f"count(count by (watch) (push_time_seconds{{{OFF_CHARGER}}})) or vector(0)", IN_GRAFANA),
-     target("B", f"count(count by (watch) ((time() - push_time_seconds{{{OFF_CHARGER}}}) < 900)) or vector(0)",
-            REPORTING),
-     # 1 for the first 10 min after a pushgateway restart on any CVS of the site. The 1d lookback finds the
-     # site's servers even when no watch series is live at restart time.
-     target("C", 'max(((time() - max by (environment) (container_start_time_seconds{name="pushgateway"})) < 600) '
-                 'and on (environment) group by (environment) (max_over_time(watch_ping{site_name="$site_name"}[1d]))) '
-                 '* 0 + 1', RESTART)],
+     target("B", f"count(count by (watch) (push_time_seconds{{{OFF_CHARGER}}}) and on (watch) "
+                 f"(min by (watch) (time() - push_time_seconds{{{ANY_STATE}}}) < {REPORTING_WINDOW_SEC})) "
+                 "or vector(0)", REPORTING_ANY),
+     target("C", f"count(count by (watch) ((time() - push_time_seconds{{{OFF_CHARGER}}}) "
+                 f"< {REPORTING_WINDOW_SEC})) or vector(0)", REPORTING_OFF),
+     # 1 shortly after a pushgateway (re)start on any of the site's CVS servers.
+     target("D", 'max((time() - container_start_time_seconds{name="pushgateway", environment=~"$environment"}) '
+                 f'< ({RESTART_MARKER_SEC} + $__interval_ms / 1000)) * 0 + 1', RESTART)],
     {},
-    [fixed_color(IN_GRAFANA, BLUE, [{"id": "custom.fillBelowTo", "value": REPORTING},
+    [fixed_color(IN_GRAFANA, BLUE, [{"id": "custom.fillBelowTo", "value": REPORTING_ANY},
                                     {"id": "custom.fillOpacity", "value": 12}]),
-     fixed_color(REPORTING, ORANGE),
-     fixed_color(RESTART, GRAY, [{"id": "custom.drawStyle", "value": "bars"},
-                                 {"id": "custom.fillOpacity", "value": 100},
+     fixed_color(REPORTING_ANY, GREEN, [{"id": "custom.fillBelowTo", "value": REPORTING_OFF},
+                                        {"id": "custom.fillOpacity", "value": 15},
+                                        {"id": "custom.lineWidth", "value": 1}]),
+     fixed_color(REPORTING_OFF, ORANGE),
+     # A filled step line instead of bars: bars are drawn per step with gaps between them.
+     fixed_color(RESTART, GRAY, [{"id": "custom.fillOpacity", "value": 30},
                                  {"id": "custom.lineWidth", "value": 0},
                                  {"id": "custom.axisPlacement", "value": "hidden"},
+                                 {"id": "custom.hideFrom", "value": {"tooltip": True, "viz": False, "legend": False}},
                                  {"id": "min", "value": 0},
                                  {"id": "max", "value": 1}])],
 )
 
-reports_per_15m = timeseries(
-    2, "Watch reports received per 15 min",
-    "Status messages from watches (watch_ping increase). A watch left on its charger keeps reporting through "
-    "the night, including across the nightly restart.",
+reports_received = timeseries(
+    2, "Watch reports received",
+    "Status messages from watches (watch_ping increase) per bar: 15 minutes, wider on long time ranges. "
+    "A watch left on its charger keeps reporting through the night, including across the nightly restart. "
+    "The first report after a series appears (e.g. a watch's first report after the restart) is not counted, "
+    "because increase() needs an earlier sample.",
     10, 8,
     [target("A", 'sum by (state) (label_replace(label_replace('
-                 'increase(watch_ping{site_name="$site_name"}[15m]), '
+                 'increase(watch_ping{site_name="$site_name"}[$__interval]), '
                  '"state", "On the charger", "is_charging", "True"), '
                  '"state", "Off the charger", "is_charging", "False"))',
             "{{state}}", interval="15m")],
     {"drawStyle": "bars", "fillOpacity": 85, "lineWidth": 1, "lineInterpolation": "linear"},
-    [fixed_color("Off the charger", ORANGE), fixed_color("On the charger", AQUA)],
+    [fixed_color("Off the charger", ORANGE), fixed_color("On the charger", GREEN)],
     stack=True,
 )
 
 hours_since_report = timeseries(
-    3, "Hours since each watch's last report (off the charger)",
-    "time() - push_time_seconds per watch. A rising line = the watch is silent but still drawn in Grafana. "
-    "The line ends when the nightly restart clears the pushgateway.",
+    3, "Hours since each watch's last report",
+    "For each watch whose off-the-charger value is held in Grafana: hours since its latest status, on or off "
+    "the charger (push_time_seconds). A watch put on the charger stays near 0 while it reports; a rising line "
+    "= the watch is silent but still drawn in Grafana. The line ends when the nightly restart clears the "
+    "pushgateway.",
     18, 9,
-    [target("A", f"min by (watch) ((time() - push_time_seconds{{{OFF_CHARGER}}}) / 3600)", "{{watch}}")],
+    [target("A", f"min by (watch) ((time() - push_time_seconds{{{ANY_STATE}}}) / 3600) "
+                 f"and on (watch) push_time_seconds{{{OFF_CHARGER}}}", "{{watch}}")],
     {"lineInterpolation": "linear"},
     [],
     unit="h",
+    decimals=1,
 )
 
 # Paths derived from this file's location so the marker + output path track
@@ -123,9 +143,9 @@ dashboard = {
     "title": "Watch metrics: nightly gap explained",
     "uid": "watch-nightly-gap",
     "id": None,
-    "description": "Why watch metrics disappear from Grafana at 03:20 local and return in the morning: the "
+    "description": "Why watch metrics disappear from Grafana at night and return in the morning: the "
                    "pushgateway on the CVS keeps a silent watch's last value until the nightly restart clears "
-                   "it. One site at a time. Times are in your browser's time zone; the restart is at 03:20 site-local time. AT-1914.",
+                   f"it ({RESTART_TIMES}). One site at a time. Times are in your browser's time zone. AT-1914.",
     "tags": ["watch", "pushgateway"],
     "timezone": "browser",
     "editable": True,
@@ -142,8 +162,14 @@ dashboard = {
          # One site at a time: the panels count watches per site, so a second site would add into the same
          # series. No saved default: Grafana opens on the first site; links pick one via var-site_name.
          "refresh": 2, "sort": 1, "includeAll": False, "multi": False, "current": {}},
+        # The site's CVS servers, for the restart marker: container metrics carry environment, not site_name.
+        {"name": "environment", "label": "CVS", "type": "query", "datasource": DS, "hide": 2,
+         "definition": 'label_values(watch_ping{site_name="$site_name"}, environment)',
+         "query": {"query": 'label_values(watch_ping{site_name="$site_name"}, environment)', "refId": "environment"},
+         "refresh": 2, "sort": 1, "includeAll": True, "multi": True,
+         "current": {"selected": True, "text": ["All"], "value": ["$__all"]}},
     ]},
-    "panels": [in_grafana_vs_reporting, reports_per_15m, hours_since_report],
+    "panels": [in_grafana_vs_reporting, reports_received, hours_since_report],
 }
 
 # Output dir is overridable via DASHBOARD_OUT_DIR so tooling
