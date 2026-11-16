@@ -1,0 +1,13 @@
+name: Require Jira ticket
+
+# A file of its own because a title fix re-runs only workflows that list `edited`;
+# in the main CI workflow, that trigger would re-run all of CI on each edit.
+# To block merges, require "require-jira-ticket / require-jira-ticket" in the ruleset.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  require-jira-ticket:
+    uses: Lynxight/.github/.github/workflows/pr-require-jira-ticket.yml@develop

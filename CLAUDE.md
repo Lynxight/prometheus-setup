@@ -40,3 +40,5 @@ you have a reason.
 ### Before committing
 
 Install the commit hook once per clone: `pip install pre-commit && pre-commit install`.
+
+- Branch `AT-xxx-short-slug`; PR title and commits start with `AT-xxx: what changed`, the why in the body. CI rejects a PR whose title or branch has no Jira key, or whose keys differ.
