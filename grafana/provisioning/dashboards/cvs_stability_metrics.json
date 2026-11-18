@@ -13,7 +13,7 @@
   "id": null,
   "uid": "cvs-stability-metrics",
   "title": "CVS Stability Metrics",
-  "description": "Monitor swimmer count validity, incidents, and algo container exceptions, with validity split into camera availability vs software uptime so camera connectivity and software faults can be told apart",
+  "description": "Monitor swimmer count validity counting every cause and with camera/LAN time removed, camera health tested on the camera itself, host absence, reboots and heat, incidents, and algo container exceptions",
   "tags": [
     "cvs",
     "stability",
@@ -223,6 +223,803 @@
   },
   "panels": [
     {
+      "id": 22,
+      "type": "row",
+      "title": "Uptime by cause: camera/LAN, host absence, heat",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false
+    },
+    {
+      "id": 23,
+      "type": "bargauge",
+      "title": "% Time with Valid Swimmer Count, camera/LAN time removed (per pool)",
+      "description": "The validity number of the 'Swimmer Count Validity' row with camera/LAN time taken out: invalid time during which a camera of the pool reported 'no ping' or 'ping but no video' (cvs_camera_health_state 1 or 2) is removed from the range, and validity is the valid share of what remains. Read it next to '% Time with Valid Swimmer Count', which counts every cause; the gap between the two is camera/LAN downtime. A camera report counts when it was renewed between one minute before and three minutes after the sample, because the first probe comes a minute or two after the pool stops; a frozen report is unknown and removes nothing. Outages shorter than 45 s are never probed and stay in the number. Pools whose CVS image does not push the gauge use the frame-rate rule instead (a camera below 0.5 fps). No bar = the pool was camera/LAN-down for the whole range. The newest three minutes are not yet attributed.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "avg(avg_over_time(((cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} unless on(pool_name, site_name, environment) ((max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) and on(pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0))) and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m]) * 100)",
+          "legendFormat": "OVERALL AVERAGE",
+          "refId": "A",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "sort(avg_over_time(((cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} unless on(pool_name, site_name, environment) ((max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) and on(pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0))) and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m]) * 100)",
+          "legendFormat": "{{site_name}} / {{pool_name}}",
+          "refId": "B",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-RdYlGr"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 80
+              },
+              {
+                "color": "green",
+                "value": 95
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "links": [
+            {
+              "title": "View in OPS Dashboard",
+              "url": "/d/c2e10e40-2cbb-460d-91a0-83334f641194/ops-dashboard-per-site-support?var-site_name=${__field.labels.site_name}&var-server=${__field.labels.environment}&var-pool_name=${__field.labels.pool_name}&from=${__from}&to=${__to}",
+              "targetBlank": true
+            }
+          ]
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "OVERALL AVERAGE"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "white",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "minVizWidth": 8,
+        "minVizHeight": 16
+      }
+    },
+    {
+      "id": 24,
+      "type": "timeseries",
+      "title": "Daily Trend: Validity counting every cause vs camera/LAN time removed (overall avg)",
+      "description": "Daily overall averages. 'Validity % (every cause)' is the swimmer-count validity. 'Validity % (camera/LAN time removed)' is the same number once invalid time with a camera/LAN fault is taken out of the day. 'Camera/LAN downtime %' is the share of the day that was taken out.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "showPoints": "always"
+          },
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Validity % (every cause)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Validity % (camera/LAN time removed)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Camera/LAN downtime %"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "avg(avg_over_time((cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[1d:5m]) * 100)",
+          "legendFormat": "Validity % (every cause)",
+          "refId": "A",
+          "interval": "1d",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "avg(avg_over_time(((cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} unless on(pool_name, site_name, environment) ((max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) and on(pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0))) and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[1d:5m]) * 100)",
+          "legendFormat": "Validity % (camera/LAN time removed)",
+          "refId": "B",
+          "interval": "1d",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "avg(avg_over_time(((((cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == bool 0) and on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"})) or (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} * 0)) and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[1d:5m]) * 100)",
+          "legendFormat": "Camera/LAN downtime %",
+          "refId": "C",
+          "interval": "1d",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "type": "table",
+      "title": "Camera health now (pools with a camera that is not fine)",
+      "description": "Every camera of each pool that has at least one camera not reported fine. The state comes from cvs_camera_health_state, which SystemHealthService pushes once a minute: while the pool produces frame sets every camera is fine without being contacted; when it stops, each camera's stream is read with ffprobe and the camera is pinged when no video arrives. 'unknown' = the report was not renewed in the last 5 minutes (health service stopped, or the pool is under maintenance); the last value is then not shown as a state. 'report age' is the time since the camera's last report, on the host's own clock.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "environment"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "server"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "state"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "-1": {
+                        "text": "unknown",
+                        "color": "#808080",
+                        "index": 0
+                      },
+                      "0": {
+                        "text": "fine",
+                        "color": "green",
+                        "index": 1
+                      },
+                      "1": {
+                        "text": "no ping",
+                        "color": "red",
+                        "index": 2
+                      },
+                      "2": {
+                        "text": "ping but no video",
+                        "color": "orange",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #B"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "report age"
+              },
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "state"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "max by (pool_name, site_name, environment, camera_id) (((cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[5m]) > 0)) or on(pool_name, site_name, environment, camera_id) (cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} * 0 - 1)) and on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) (((cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[5m]) > 0)) or on(pool_name, site_name, environment, camera_id) (cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} * 0 - 1)) != 0)) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))",
+          "legendFormat": "",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "max by (pool_name, site_name, environment, camera_id) ((timestamp(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) - push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) and on(pool_name, site_name, environment, camera_id) (max by (pool_name, site_name, environment, camera_id) (((cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[5m]) > 0)) or on(pool_name, site_name, environment, camera_id) (cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} * 0 - 1)) and on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) (((cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[5m]) > 0)) or on(pool_name, site_name, environment, camera_id) (cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} * 0 - 1)) != 0)) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))))",
+          "legendFormat": "",
+          "refId": "B",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": {
+              "site_name": 0,
+              "pool_name": 1,
+              "environment": 2,
+              "camera_id": 3,
+              "Value #A": 4,
+              "Value #B": 5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "type": "table",
+      "title": "Hosts: absence, reboots, heat (per server)",
+      "description": "Per server over the selected range. 'absent %' = share of the range in which the cloud had no node-exporter sample from the host (5-minute grid, so the nightly monitoring restart and gaps under 5 minutes do not count; internet and power/host outages are not told apart here, and a host silent for the whole range has no row). 'reboots' = times the boot time moved by more than 2 minutes. 'max CPU \u00b0C' = hottest CPU sensor reading. 'throttle events' = CPU package thermal-throttle events. 'lowest pool validity %' = the swimmer-count validity of the host's worst selected pool. Sort by temperature or throttling to see whether downtime follows heat.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "filterable": true
+          },
+          "decimals": 1
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "environment"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "server"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "absent %"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #B"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "reboots"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #C"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "max CPU \u00b0C"
+              },
+              {
+                "id": "unit",
+                "value": "celsius"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #D"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "throttle events"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Value #E"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "lowest pool validity %"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "absent %"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "max by (environment) (clamp_min(1 - count_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[$__range:5m]) / ($__range_s / 300), 0) * 100)",
+          "legendFormat": "",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "max by (environment) (sum_over_time(((node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"} - last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d] offset 5m)) > bool 120)[$__range:5m]))",
+          "legendFormat": "",
+          "refId": "B",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "max_over_time((max by (environment) (node_hwmon_temp_celsius{job=\"nodeexporter\", chip=~\"platform_coretemp_.*\", environment=~\"$server\", group=~\"$deploy_group\"}))[$__range:5m])",
+          "legendFormat": "",
+          "refId": "C",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "sum by (environment) (increase(node_cpu_package_throttles_total{job=\"nodeexporter_lowfreq\", environment=~\"$server\", group=~\"$deploy_group\"}[$__range]))",
+          "legendFormat": "",
+          "refId": "D",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "min by (environment) (avg_over_time((cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m]) * 100)",
+          "legendFormat": "",
+          "refId": "E",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": {
+              "environment": 0,
+              "Value #A": 1,
+              "Value #B": 2,
+              "Value #C": 3,
+              "Value #D": 4,
+              "Value #E": 5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "type": "timeseries",
+      "title": "Host heat over time: hottest CPU sensor and throttling (per server)",
+      "description": "Hottest CPU sensor of each selected server (left axis) and its CPU package thermal-throttle events per 10 minutes (right axis, bars). Narrow the Server filter and compare with the validity panel beside it.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 29
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never"
+          },
+          "unit": "celsius"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "custom.drawStyle",
+                "value": "bars"
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 40
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "max by (environment) (node_hwmon_temp_celsius{job=\"nodeexporter\", chip=~\"platform_coretemp_.*\", environment=~\"$server\", group=~\"$deploy_group\"})",
+          "legendFormat": "{{environment}} \u00b0C",
+          "refId": "A",
+          "range": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "sum by (environment) (increase(node_cpu_package_throttles_total{job=\"nodeexporter_lowfreq\", environment=~\"$server\", group=~\"$deploy_group\"}[10m]))",
+          "legendFormat": "{{environment}} throttle events",
+          "refId": "B",
+          "interval": "10m",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "type": "timeseries",
+      "title": "Pool validity over time (per pool, 15-minute average)",
+      "description": "Swimmer-count validity of each selected pool, averaged over 15 minutes, on the same time axis as the heat panel beside it. A gap = the pool was under maintenance or its host was absent.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 29
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "lineWidth": 1,
+            "showPoints": "never"
+          },
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "asc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[15m]) * 100 and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0)",
+          "legendFormat": "{{site_name}} / {{pool_name}}",
+          "refId": "A",
+          "interval": "15m",
+          "range": true
+        }
+      ]
+    },
+    {
       "id": 20,
       "type": "row",
       "title": "Availability Breakdown: Cameras vs Software",
@@ -230,7 +1027,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 38
       },
       "collapsed": false
     },
@@ -247,7 +1044,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 1
+        "y": 39
       },
       "targets": [
         {
@@ -353,7 +1150,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 1
+        "y": 39
       },
       "targets": [
         {
@@ -471,7 +1268,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 11
+        "y": 49
       },
       "targets": [
         {
@@ -603,7 +1400,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 19
+        "y": 57
       },
       "targets": [
         {
@@ -769,7 +1566,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 27
+        "y": 65
       },
       "collapsed": false
     },
@@ -786,7 +1583,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 28
+        "y": 66
       },
       "targets": [
         {
@@ -892,7 +1689,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 28
+        "y": 66
       },
       "targets": [
         {
@@ -957,7 +1754,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 38
+        "y": 76
       },
       "collapsed": false
     },
@@ -974,7 +1771,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 39
+        "y": 77
       },
       "targets": [
         {
@@ -1075,7 +1872,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 39
+        "y": 77
       },
       "targets": [
         {
@@ -1141,7 +1938,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 47
+        "y": 85
       },
       "collapsed": false
     },
@@ -1158,7 +1955,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 48
+        "y": 86
       },
       "targets": [
         {
@@ -1226,7 +2023,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 48
+        "y": 86
       },
       "targets": [
         {
@@ -1295,7 +2092,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 56
+        "y": 94
       },
       "targets": [
         {
@@ -1464,7 +2261,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 66
+        "y": 104
       },
       "collapsed": false
     },
@@ -1481,7 +2278,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 67
+        "y": 105
       },
       "targets": [
         {
@@ -1552,7 +2349,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 75
+        "y": 113
       },
       "targets": [
         {
