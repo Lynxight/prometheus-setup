@@ -193,7 +193,7 @@ def exception_table(pid, title, description, grid_pos, expr, legend, hidden_labe
 
 ON_CAMERA = "on(pool_name, site_name, environment, camera_id)"
 BY_CAMERA = "by (pool_name, site_name, environment, camera_id)"
-# SystemHealthService pushes it once a minute: 0 fine, 1 no ping, 2 ping but no video.
+# SystemHealthService pushes it once a minute: 0 fine, 1 ping but no video, 2 no ping.
 CAMERA_HEALTH = f"cvs_camera_health_state{{{POOL}}}"
 CAMERA_HEALTH_PUSH_TIME = f'push_time_seconds{{name="cvs_camera_health_state", {POOL}}}'
 
@@ -254,7 +254,7 @@ THROTTLES = f'node_cpu_package_throttles_total{{job="nodeexporter_lowfreq", {HOS
 validity_without_camera_time = per_pool_bargauge(
     23, "% Time with Valid Swimmer Count, camera/LAN time removed (per pool)",
     "The validity number of the 'Swimmer Count Validity' row with camera/LAN time taken out: invalid time during "
-    "which a camera of the pool reported 'no ping' or 'ping but no video' (cvs_camera_health_state 1 or 2) is "
+    "which a camera of the pool reported 'ping but no video' or 'no ping' (cvs_camera_health_state 1 or 2) is "
     "removed from the range, and validity is the valid share of what remains. Read it next to '% Time with Valid "
     "Swimmer Count', which counts every cause; the gap between the two is camera/LAN downtime. "
     "A camera report counts when it was renewed between one minute before and three minutes after the sample, "
@@ -322,8 +322,8 @@ camera_health_now = {
                 {"id": "mappings", "value": [{"type": "value", "options": {
                     "-1": {"text": "unknown", "color": "#808080", "index": 0},
                     "0": {"text": "fine", "color": "green", "index": 1},
-                    "1": {"text": "no ping", "color": "red", "index": 2},
-                    "2": {"text": "ping but no video", "color": "orange", "index": 3},
+                    "1": {"text": "ping but no video", "color": "orange", "index": 2},
+                    "2": {"text": "no ping", "color": "red", "index": 3},
                 }}]},
             ),
             rename("Value #B", "report age", {"id": "unit", "value": "s"}, {"id": "decimals", "value": 0}),

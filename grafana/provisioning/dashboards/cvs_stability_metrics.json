@@ -238,7 +238,7 @@
       "id": 23,
       "type": "bargauge",
       "title": "% Time with Valid Swimmer Count, camera/LAN time removed (per pool)",
-      "description": "The validity number of the 'Swimmer Count Validity' row with camera/LAN time taken out: invalid time during which a camera of the pool reported 'no ping' or 'ping but no video' (cvs_camera_health_state 1 or 2) is removed from the range, and validity is the valid share of what remains. Read it next to '% Time with Valid Swimmer Count', which counts every cause; the gap between the two is camera/LAN downtime. A camera report counts when it was renewed between one minute before and three minutes after the sample, because the first probe comes a minute or two after the pool stops; a frozen report is unknown and removes nothing. Outages shorter than 45 s are never probed and stay in the number. Pools whose CVS image does not push the gauge use the frame-rate rule instead (a camera below 0.5 fps). No bar = the pool was camera/LAN-down for the whole range. The newest three minutes are not yet attributed.",
+      "description": "The validity number of the 'Swimmer Count Validity' row with camera/LAN time taken out: invalid time during which a camera of the pool reported 'ping but no video' or 'no ping' (cvs_camera_health_state 1 or 2) is removed from the range, and validity is the valid share of what remains. Read it next to '% Time with Valid Swimmer Count', which counts every cause; the gap between the two is camera/LAN downtime. A camera report counts when it was renewed between one minute before and three minutes after the sample, because the first probe comes a minute or two after the pool stops; a frozen report is unknown and removes nothing. Outages shorter than 45 s are never probed and stay in the number. Pools whose CVS image does not push the gauge use the frame-rate rule instead (a camera below 0.5 fps). No bar = the pool was camera/LAN-down for the whole range. The newest three minutes are not yet attributed.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -551,13 +551,13 @@
                         "index": 1
                       },
                       "1": {
-                        "text": "no ping",
-                        "color": "red",
+                        "text": "ping but no video",
+                        "color": "orange",
                         "index": 2
                       },
                       "2": {
-                        "text": "ping but no video",
-                        "color": "orange",
+                        "text": "no ping",
+                        "color": "red",
                         "index": 3
                       }
                     }
