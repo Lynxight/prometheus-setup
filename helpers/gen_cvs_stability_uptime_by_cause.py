@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate grafana/provisioning/dashboards/cvs_stability_metrics.json.
+"""Generate grafana/provisioning/dashboards/cvs_stability_uptime_by_cause.json.
 
 The dashboard JSON is generated — edit this script and re-run it instead of
 editing the JSON by hand.
@@ -743,7 +743,7 @@ out_dir = pathlib.Path(
     os.environ.get("DASHBOARD_OUT_DIR", REPO_ROOT / "grafana/provisioning/dashboards")
 )
 out_dir.mkdir(parents=True, exist_ok=True)
-out = str(out_dir / "cvs_stability_metrics.json")
+out = str(out_dir / "cvs_stability_uptime_by_cause.json")
 with open(out, "w", encoding="utf-8") as f:
     json.dump(dashboard, f, indent=2)
     f.write("\n")

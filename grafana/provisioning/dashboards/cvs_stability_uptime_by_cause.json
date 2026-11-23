@@ -1,6 +1,6 @@
 {
-  "__generated_by": "helpers/gen_cvs_stability_metrics.py",
-  "__generated_warning": "GENERATED FILE \u2014 do not edit by hand. Edit the generator and re-run: python3 helpers/gen_cvs_stability_metrics.py",
+  "__generated_by": "helpers/gen_cvs_stability_uptime_by_cause.py",
+  "__generated_warning": "GENERATED FILE \u2014 do not edit by hand. Edit the generator and re-run: python3 helpers/gen_cvs_stability_uptime_by_cause.py",
   "__inputs": [],
   "__requires": [
     {
