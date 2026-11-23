@@ -119,17 +119,19 @@ def row(pid, title, y):
 
 
 def per_pool_bargauge(pid, title, description, grid_pos, overall_expr, per_pool_expr, defaults, options=None):
-    """A bar per pool plus a white OVERALL AVERAGE bar, linking to the OPS dashboard of the clicked pool."""
+    """A bar per pool, linking to the OPS dashboard of the clicked pool, plus a white OVERALL AVERAGE bar unless
+    overall_expr is None."""
+    overall_targets = [] if overall_expr is None else [target("A", overall_expr, "OVERALL AVERAGE", instant=True)]
     return {
         "id": pid, "type": "bargauge", "title": title, "description": description, "datasource": DS,
         "gridPos": grid_pos,
         "targets": [
-            target("A", overall_expr, "OVERALL AVERAGE", instant=True),
+            *overall_targets,
             target("B", per_pool_expr, "{{site_name}} / {{pool_name}}", instant=True),
         ],
         "fieldConfig": {
             "defaults": {**defaults, "links": [OPS_LINK]},
-            "overrides": [fixed_color("OVERALL AVERAGE", "white")],
+            "overrides": [] if overall_expr is None else [fixed_color("OVERALL AVERAGE", "white")],
         },
         "options": {
             "orientation": "horizontal", "displayMode": "gradient",
@@ -244,9 +246,11 @@ validity_without_camera_time = per_pool_bargauge(
     "because the first probe comes a minute or two after the pool stops; a frozen report is unknown and removes "
     "nothing. Outages shorter than 45 s are never probed and stay in the number. Pools whose CVS image does not "
     "push the gauge use the frame-rate rule instead (a camera below 0.5 fps). No bar = the pool was camera/LAN-down "
-    "for the whole range. The newest three minutes are not yet attributed.",
-    grid(0, 1, 12, 10),
-    f"avg(avg_over_time({VALID_WITHOUT_CAMERA_TIME}[$__range:5m]) * 100)",
+    "for the whole range. The newest three minutes are not yet attributed. The fleet average is the 'Validity % "
+    "(camera/LAN time removed)' line of the daily trend beside this panel; it has no bar here because each "
+    "query of this expression is slow on the production Prometheus.",
+    grid(0, 1, 12, 12),
+    None,
     f"sort(avg_over_time({VALID_WITHOUT_CAMERA_TIME}[$__range:5m]) * 100)",
     {"color": {"mode": "continuous-RdYlGr"}, "thresholds": thresholds(RED_YELLOW_GREEN_80_95), "unit": "percent",
      "decimals": 1, "min": 0, "max": 100},
@@ -259,7 +263,7 @@ validity_by_cause_trend = {
     "description": "Daily overall averages. 'Validity % (every cause)' is the swimmer-count validity. 'Validity % "
                    "(camera/LAN time removed)' is the same number once invalid time with a camera/LAN fault is taken "
                    "out of the day. 'Camera/LAN downtime %' is the share of the day that was taken out.",
-    "datasource": DS, "gridPos": grid(12, 1, 12, 10),
+    "datasource": DS, "gridPos": grid(12, 1, 12, 12),
     "fieldConfig": {
         "defaults": {
             "color": {"mode": "palette-classic"},
@@ -293,7 +297,7 @@ hosts_table = {
                    "2 minutes. 'max CPU \u00b0C' = hottest CPU sensor reading. 'throttle events' = CPU package "
                    "thermal-throttle events. 'lowest pool validity %' = the swimmer-count validity of the host's "
                    "worst selected pool. Sort by temperature or throttling to see whether downtime follows heat.",
-    "datasource": DS, "gridPos": grid(0, 11, 24, 9),
+    "datasource": DS, "gridPos": grid(0, 13, 24, 11),
     "fieldConfig": {
         "defaults": {"custom": {"filterable": True}, "decimals": 1},
         "overrides": [
@@ -330,7 +334,7 @@ host_heat = {
     "description": "Hottest CPU sensor of each selected server (left axis) and its CPU package thermal-throttle "
                    "events per 10 minutes (right axis, bars). Narrow the Server filter and compare with the validity "
                    "panel beside it.",
-    "datasource": DS, "gridPos": grid(0, 20, 12, 9),
+    "datasource": DS, "gridPos": grid(0, 24, 12, 9),
     "fieldConfig": {
         "defaults": {"color": {"mode": "palette-classic"}, "custom": LINES_NO_POINTS, "unit": "celsius"},
         "overrides": [{
@@ -356,7 +360,7 @@ pool_validity_over_time = {
     "id": 28, "type": "timeseries", "title": "Pool validity over time (per pool, 15-minute average)",
     "description": "Swimmer-count validity of each selected pool, averaged over 15 minutes, on the same time axis as "
                    "the heat panel beside it. A gap = the pool was under maintenance or its host was absent.",
-    "datasource": DS, "gridPos": grid(12, 20, 12, 9),
+    "datasource": DS, "gridPos": grid(12, 24, 12, 9),
     "fieldConfig": {
         "defaults": {"color": {"mode": "palette-classic"}, "custom": LINES_NO_POINTS, "unit": "percent",
                      "min": 0, "max": 100},
@@ -368,7 +372,7 @@ pool_validity_over_time = {
                        "{{site_name}} / {{pool_name}}", interval="15m", range=True)],
 }
 
-UPTIME_BY_CAUSE_ROW_HEIGHT = 29
+UPTIME_BY_CAUSE_ROW_HEIGHT = 33
 
 # --- Availability Breakdown: Cameras vs Software --------------------------------------------------------------
 

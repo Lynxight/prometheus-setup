@@ -238,29 +238,18 @@
       "id": 23,
       "type": "bargauge",
       "title": "% Time with Valid Swimmer Count, camera/LAN time removed (per pool)",
-      "description": "The validity number of the 'Swimmer Count Validity' row with camera/LAN time taken out: invalid time during which a camera of the pool reported 'ping but no video' or 'no ping' (cvs_camera_health_state 1 or 2) is removed from the range, and validity is the valid share of what remains. Read it next to '% Time with Valid Swimmer Count', which counts every cause; the gap between the two is camera/LAN downtime. A camera report counts when it was renewed between one minute before and three minutes after the sample, because the first probe comes a minute or two after the pool stops; a frozen report is unknown and removes nothing. Outages shorter than 45 s are never probed and stay in the number. Pools whose CVS image does not push the gauge use the frame-rate rule instead (a camera below 0.5 fps). No bar = the pool was camera/LAN-down for the whole range. The newest three minutes are not yet attributed.",
+      "description": "The validity number of the 'Swimmer Count Validity' row with camera/LAN time taken out: invalid time during which a camera of the pool reported 'ping but no video' or 'no ping' (cvs_camera_health_state 1 or 2) is removed from the range, and validity is the valid share of what remains. Read it next to '% Time with Valid Swimmer Count', which counts every cause; the gap between the two is camera/LAN downtime. A camera report counts when it was renewed between one minute before and three minutes after the sample, because the first probe comes a minute or two after the pool stops; a frozen report is unknown and removes nothing. Outages shorter than 45 s are never probed and stay in the number. Pools whose CVS image does not push the gauge use the frame-rate rule instead (a camera below 0.5 fps). No bar = the pool was camera/LAN-down for the whole range. The newest three minutes are not yet attributed. The fleet average is the 'Validity % (camera/LAN time removed)' line of the daily trend beside this panel; it has no bar here because each query of this expression is slow on the production Prometheus.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
-        "h": 10,
+        "h": 12,
         "w": 12,
         "x": 0,
         "y": 1
       },
       "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "avg(avg_over_time(((cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} unless on(pool_name, site_name, environment) ((max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) and on(pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0))) and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[$__range:5m]) * 100)",
-          "legendFormat": "OVERALL AVERAGE",
-          "refId": "A",
-          "instant": true
-        },
         {
           "datasource": {
             "type": "prometheus",
@@ -307,23 +296,7 @@
             }
           ]
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "OVERALL AVERAGE"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "white",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "options": {
         "orientation": "horizontal",
@@ -350,7 +323,7 @@
         "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
-        "h": 10,
+        "h": 12,
         "w": 12,
         "x": 12,
         "y": 1
@@ -482,10 +455,10 @@
         "uid": "PBFA97CFB590B2093"
       },
       "gridPos": {
-        "h": 9,
+        "h": 11,
         "w": 24,
         "x": 0,
-        "y": 11
+        "y": 13
       },
       "fieldConfig": {
         "defaults": {
@@ -705,7 +678,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 20
+        "y": 24
       },
       "fieldConfig": {
         "defaults": {
@@ -800,7 +773,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 20
+        "y": 24
       },
       "fieldConfig": {
         "defaults": {
@@ -856,7 +829,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 29
+        "y": 33
       },
       "collapsed": false
     },
@@ -873,7 +846,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 30
+        "y": 34
       },
       "targets": [
         {
@@ -979,7 +952,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 30
+        "y": 34
       },
       "targets": [
         {
@@ -1097,7 +1070,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 40
+        "y": 44
       },
       "targets": [
         {
@@ -1229,7 +1202,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 48
+        "y": 52
       },
       "targets": [
         {
@@ -1395,7 +1368,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 56
+        "y": 60
       },
       "collapsed": false
     },
@@ -1412,7 +1385,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 57
+        "y": 61
       },
       "targets": [
         {
@@ -1518,7 +1491,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 57
+        "y": 61
       },
       "targets": [
         {
@@ -1583,7 +1556,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 67
+        "y": 71
       },
       "collapsed": false
     },
@@ -1600,7 +1573,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 68
+        "y": 72
       },
       "targets": [
         {
@@ -1701,7 +1674,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 68
+        "y": 72
       },
       "targets": [
         {
@@ -1767,7 +1740,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 76
+        "y": 80
       },
       "collapsed": false
     },
@@ -1784,7 +1757,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 77
+        "y": 81
       },
       "targets": [
         {
@@ -1852,7 +1825,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 77
+        "y": 81
       },
       "targets": [
         {
@@ -1921,7 +1894,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 85
+        "y": 89
       },
       "targets": [
         {
@@ -2090,7 +2063,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 95
+        "y": 99
       },
       "collapsed": false
     },
@@ -2107,7 +2080,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 96
+        "y": 100
       },
       "targets": [
         {
@@ -2178,7 +2151,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 104
+        "y": 108
       },
       "targets": [
         {
