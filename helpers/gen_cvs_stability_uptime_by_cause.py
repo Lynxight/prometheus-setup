@@ -192,7 +192,6 @@ def exception_table(pid, title, description, grid_pos, expr, legend, hidden_labe
 # https://lynxight.atlassian.net/browse/AT-1667
 
 ON_CAMERA = "on(pool_name, site_name, environment, camera_id)"
-BY_CAMERA = "by (pool_name, site_name, environment, camera_id)"
 # SystemHealthService pushes it once a minute: 0 fine, 1 ping but no video, 2 no ping.
 CAMERA_HEALTH = f"cvs_camera_health_state{{{POOL}}}"
 CAMERA_HEALTH_PUSH_TIME = f'push_time_seconds{{name="cvs_camera_health_state", {POOL}}}'
@@ -214,24 +213,6 @@ VALID_WITHOUT_CAMERA_TIME = (
 # 1 for an invalid sample with a camera/LAN fault, 0 for every other validity sample.
 CAMERA_DOWNTIME = (
     f"(((({VALID} == bool 0) and {ON_POOL} {POOL_CAMERA_FAULT}) or ({VALID} * 0)) and {ON_POOL} {VERSION})"
-)
-
-# Per camera: the reported state, or -1 when the report was not renewed in the last 5 minutes.
-CAMERA_HEALTH_NOW = (
-    f"(({CAMERA_HEALTH} and {ON_CAMERA} (changes({CAMERA_HEALTH_PUSH_TIME}[5m]) > 0)) "
-    f"or {ON_CAMERA} ({CAMERA_HEALTH} * 0 - 1))"
-)
-# Every camera of each pool that has a camera not reported fine.
-UNHEALTHY_POOL_CAMERAS = (
-    f"max {BY_CAMERA} ({CAMERA_HEALTH_NOW} "
-    f"and {ON_POOL} (max {BY_POOL} ({CAMERA_HEALTH_NOW} != 0)) "
-    f"and {ON_POOL} {SWIMMER_COUNT} "
-    f"and {ON_POOL} {VERSION})"
-)
-# Measured on the host's own clock, so clock skew between the host and the cloud does not count.
-CAMERA_REPORT_AGE = (
-    f"max {BY_CAMERA} ((timestamp({CAMERA_HEALTH_PUSH_TIME}) - {CAMERA_HEALTH_PUSH_TIME}) "
-    f"and {ON_CAMERA} ({UNHEALTHY_POOL_CAMERAS}))"
 )
 
 HOST = 'environment=~"$server", group=~"$deploy_group"'
@@ -303,46 +284,6 @@ validity_by_cause_trend = {
     ],
 }
 
-camera_health_now = {
-    "id": 25, "type": "table", "title": "Camera health now (pools with a camera that is not fine)",
-    "description": "Every camera of each pool that has at least one camera not reported fine. The state comes from "
-                   "cvs_camera_health_state, which SystemHealthService pushes once a minute: while the pool produces "
-                   "frame sets every camera is fine without being contacted; when it stops, each camera's stream is "
-                   "read with ffprobe and the camera is pinged when no video arrives. 'unknown' = the report was not "
-                   "renewed in the last 5 minutes (health service stopped, or the pool is under maintenance); the "
-                   "last value is then not shown as a state. 'report age' is the time since the camera's last "
-                   "report, on the host's own clock.",
-    "datasource": DS, "gridPos": grid(0, 11, 24, 9),
-    "fieldConfig": {
-        "defaults": {"custom": {"filterable": True}},
-        "overrides": [
-            hide("Time"),
-            rename("environment", "server"),
-            rename(
-                "Value #A", "state",
-                {"id": "custom.cellOptions", "value": {"type": "color-background"}},
-                {"id": "mappings", "value": [{"type": "value", "options": {
-                    "-1": {"text": "unknown", "color": "#808080", "index": 0},
-                    "0": {"text": "fine", "color": "green", "index": 1},
-                    "1": {"text": "ping but no video", "color": "orange", "index": 2},
-                    "2": {"text": "no ping", "color": "red", "index": 3},
-                }}]},
-            ),
-            rename("Value #B", "report age", {"id": "unit", "value": "s"}, {"id": "decimals", "value": 0}),
-        ],
-    },
-    "options": {"showHeader": True, "sortBy": [{"desc": True, "displayName": "state"}]},
-    "targets": [
-        target("A", UNHEALTHY_POOL_CAMERAS, "", format="table", instant=True),
-        target("B", CAMERA_REPORT_AGE, "", format="table", instant=True),
-    ],
-    "transformations": [
-        {"id": "merge", "options": {}},
-        {"id": "organize", "options": {"indexByName": {
-            "site_name": 0, "pool_name": 1, "environment": 2, "camera_id": 3, "Value #A": 4, "Value #B": 5}}},
-    ],
-}
-
 hosts_table = {
     "id": 26, "type": "table", "title": "Hosts: absence, reboots, heat (per server)",
     "description": "Per server over the selected range. 'absent %' = share of the range in which the cloud had no "
@@ -352,7 +293,7 @@ hosts_table = {
                    "2 minutes. 'max CPU \u00b0C' = hottest CPU sensor reading. 'throttle events' = CPU package "
                    "thermal-throttle events. 'lowest pool validity %' = the swimmer-count validity of the host's "
                    "worst selected pool. Sort by temperature or throttling to see whether downtime follows heat.",
-    "datasource": DS, "gridPos": grid(0, 20, 24, 9),
+    "datasource": DS, "gridPos": grid(0, 11, 24, 9),
     "fieldConfig": {
         "defaults": {"custom": {"filterable": True}, "decimals": 1},
         "overrides": [
@@ -389,7 +330,7 @@ host_heat = {
     "description": "Hottest CPU sensor of each selected server (left axis) and its CPU package thermal-throttle "
                    "events per 10 minutes (right axis, bars). Narrow the Server filter and compare with the validity "
                    "panel beside it.",
-    "datasource": DS, "gridPos": grid(0, 29, 12, 9),
+    "datasource": DS, "gridPos": grid(0, 20, 12, 9),
     "fieldConfig": {
         "defaults": {"color": {"mode": "palette-classic"}, "custom": LINES_NO_POINTS, "unit": "celsius"},
         "overrides": [{
@@ -415,7 +356,7 @@ pool_validity_over_time = {
     "id": 28, "type": "timeseries", "title": "Pool validity over time (per pool, 15-minute average)",
     "description": "Swimmer-count validity of each selected pool, averaged over 15 minutes, on the same time axis as "
                    "the heat panel beside it. A gap = the pool was under maintenance or its host was absent.",
-    "datasource": DS, "gridPos": grid(12, 29, 12, 9),
+    "datasource": DS, "gridPos": grid(12, 20, 12, 9),
     "fieldConfig": {
         "defaults": {"color": {"mode": "palette-classic"}, "custom": LINES_NO_POINTS, "unit": "percent",
                      "min": 0, "max": 100},
@@ -427,7 +368,7 @@ pool_validity_over_time = {
                        "{{site_name}} / {{pool_name}}", interval="15m", range=True)],
 }
 
-UPTIME_BY_CAUSE_ROW_HEIGHT = 38
+UPTIME_BY_CAUSE_ROW_HEIGHT = 29
 
 # --- Availability Breakdown: Cameras vs Software --------------------------------------------------------------
 
@@ -655,7 +596,7 @@ video_stream_exceptions_table = exception_table(
 
 PANELS = [
     row(22, "Uptime by cause: camera/LAN, host absence, heat", 0),
-    validity_without_camera_time, validity_by_cause_trend, camera_health_now, hosts_table, host_heat,
+    validity_without_camera_time, validity_by_cause_trend, hosts_table, host_heat,
     pool_validity_over_time,
     row(20, "Availability Breakdown: Cameras vs Software", UPTIME_BY_CAUSE_ROW_HEIGHT + 0),
     camera_availability, software_uptime_gauge, availability_trend, cameras_below_99,

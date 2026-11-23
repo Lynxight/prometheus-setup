@@ -473,177 +473,6 @@
       ]
     },
     {
-      "id": 25,
-      "type": "table",
-      "title": "Camera health now (pools with a camera that is not fine)",
-      "description": "Every camera of each pool that has at least one camera not reported fine. The state comes from cvs_camera_health_state, which SystemHealthService pushes once a minute: while the pool produces frame sets every camera is fine without being contacted; when it stops, each camera's stream is read with ffprobe and the camera is pinged when no video arrives. 'unknown' = the report was not renewed in the last 5 minutes (health service stopped, or the pool is under maintenance); the last value is then not shown as a state. 'report age' is the time since the camera's last report, on the host's own clock.",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 24,
-        "x": 0,
-        "y": 11
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "filterable": true
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Time"
-            },
-            "properties": [
-              {
-                "id": "custom.hidden",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "environment"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "server"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Value #A"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "state"
-              },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "type": "color-background"
-                }
-              },
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "value",
-                    "options": {
-                      "-1": {
-                        "text": "unknown",
-                        "color": "#808080",
-                        "index": 0
-                      },
-                      "0": {
-                        "text": "fine",
-                        "color": "green",
-                        "index": 1
-                      },
-                      "1": {
-                        "text": "ping but no video",
-                        "color": "orange",
-                        "index": 2
-                      },
-                      "2": {
-                        "text": "no ping",
-                        "color": "red",
-                        "index": 3
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Value #B"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "report age"
-              },
-              {
-                "id": "unit",
-                "value": "s"
-              },
-              {
-                "id": "decimals",
-                "value": 0
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "state"
-          }
-        ]
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "max by (pool_name, site_name, environment, camera_id) (((cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[5m]) > 0)) or on(pool_name, site_name, environment, camera_id) (cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} * 0 - 1)) and on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) (((cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[5m]) > 0)) or on(pool_name, site_name, environment, camera_id) (cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} * 0 - 1)) != 0)) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))",
-          "legendFormat": "",
-          "refId": "A",
-          "format": "table",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "max by (pool_name, site_name, environment, camera_id) ((timestamp(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) - push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) and on(pool_name, site_name, environment, camera_id) (max by (pool_name, site_name, environment, camera_id) (((cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[5m]) > 0)) or on(pool_name, site_name, environment, camera_id) (cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} * 0 - 1)) and on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) (((cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[5m]) > 0)) or on(pool_name, site_name, environment, camera_id) (cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"} * 0 - 1)) != 0)) and on(pool_name, site_name, environment) swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))))",
-          "legendFormat": "",
-          "refId": "B",
-          "format": "table",
-          "instant": true
-        }
-      ],
-      "transformations": [
-        {
-          "id": "merge",
-          "options": {}
-        },
-        {
-          "id": "organize",
-          "options": {
-            "indexByName": {
-              "site_name": 0,
-              "pool_name": 1,
-              "environment": 2,
-              "camera_id": 3,
-              "Value #A": 4,
-              "Value #B": 5
-            }
-          }
-        }
-      ]
-    },
-    {
       "id": 26,
       "type": "table",
       "title": "Hosts: absence, reboots, heat (per server)",
@@ -656,7 +485,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 11
       },
       "fieldConfig": {
         "defaults": {
@@ -876,7 +705,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 29
+        "y": 20
       },
       "fieldConfig": {
         "defaults": {
@@ -971,7 +800,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 29
+        "y": 20
       },
       "fieldConfig": {
         "defaults": {
@@ -1027,7 +856,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 38
+        "y": 29
       },
       "collapsed": false
     },
@@ -1044,7 +873,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 39
+        "y": 30
       },
       "targets": [
         {
@@ -1150,7 +979,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 39
+        "y": 30
       },
       "targets": [
         {
@@ -1268,7 +1097,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 49
+        "y": 40
       },
       "targets": [
         {
@@ -1400,7 +1229,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 57
+        "y": 48
       },
       "targets": [
         {
@@ -1566,7 +1395,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 65
+        "y": 56
       },
       "collapsed": false
     },
@@ -1583,7 +1412,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 66
+        "y": 57
       },
       "targets": [
         {
@@ -1689,7 +1518,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 66
+        "y": 57
       },
       "targets": [
         {
@@ -1754,7 +1583,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 76
+        "y": 67
       },
       "collapsed": false
     },
@@ -1771,7 +1600,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 77
+        "y": 68
       },
       "targets": [
         {
@@ -1872,7 +1701,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 77
+        "y": 68
       },
       "targets": [
         {
@@ -1938,7 +1767,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 85
+        "y": 76
       },
       "collapsed": false
     },
@@ -1955,7 +1784,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 86
+        "y": 77
       },
       "targets": [
         {
@@ -2023,7 +1852,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 86
+        "y": 77
       },
       "targets": [
         {
@@ -2092,7 +1921,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 94
+        "y": 85
       },
       "targets": [
         {
@@ -2261,7 +2090,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 104
+        "y": 95
       },
       "collapsed": false
     },
@@ -2278,7 +2107,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 105
+        "y": 96
       },
       "targets": [
         {
@@ -2349,7 +2178,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 113
+        "y": 104
       },
       "targets": [
         {
