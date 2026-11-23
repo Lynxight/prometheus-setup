@@ -114,8 +114,12 @@ def fixed_color(field_name, color):
     }
 
 
-def row(pid, title, y):
-    return {"id": pid, "type": "row", "title": title, "gridPos": grid(0, y, 24, 1), "collapsed": False}
+def row(pid, title, y, collapsed_panels=None):
+    """A row; given collapsed_panels it starts collapsed, holding them, and Grafana queries them only when opened."""
+    if collapsed_panels is None:
+        return {"id": pid, "type": "row", "title": title, "gridPos": grid(0, y, 24, 1), "collapsed": False}
+    return {"id": pid, "type": "row", "title": title, "gridPos": grid(0, y, 24, 1), "collapsed": True,
+            "panels": collapsed_panels}
 
 
 def per_pool_bargauge(pid, title, description, grid_pos, overall_expr, per_pool_expr, defaults, options=None):
@@ -234,6 +238,12 @@ CPU_TEMPERATURE = f"max by (environment) ({CPU_SENSOR_TEMPERATURE})"
 # peaks between them.
 MAX_CPU_TEMPERATURE = f"max by (environment) (max_over_time({CPU_SENSOR_TEMPERATURE}[$__range]))"
 THROTTLES = f'node_cpu_package_throttles_total{{job="nodeexporter_lowfreq", {HOST}}}'
+# The host panels show the servers that had a pool passing the dashboard's filters in some hour of the range, so a
+# host that went silent before the end of the range keeps its row; joining on the current sample would drop it.
+SELECTED_POOL_HOSTS = f"group by (environment) (max_over_time({SWIMMER_COUNT}[$__range:1h]))"
+# The same for each point of a time series, over the day before it: the set of pools passing the filters changes
+# during the day, and joining on each point's own sample would cut a host's line whenever it shrinks.
+SELECTED_POOL_HOSTS_DAY = f"group by (environment) (max_over_time({SWIMMER_COUNT}[1d:1h]))"
 
 
 validity_without_camera_time = per_pool_bargauge(
@@ -290,7 +300,7 @@ validity_by_cause_trend = {
 
 hosts_table = {
     "id": 26, "type": "table", "title": "Hosts: absence, reboots, heat (per server)",
-    "description": "Per server over the selected range. 'absent %' = share of the range in which the cloud had no "
+    "description": "Per server with a pool that passes the dashboard's filters in some hour of the selected range, over that range. 'absent %' = share of the range in which the cloud had no "
                    "node-exporter sample from the host (5-minute grid, so the nightly monitoring restart and gaps "
                    "under 5 minutes do not count; internet and power/host outages are not told apart here, and a "
                    "host silent for the whole range has no row). 'reboots' = times the boot time moved by more than "
@@ -312,10 +322,12 @@ hosts_table = {
     },
     "options": {"showHeader": True, "sortBy": [{"desc": True, "displayName": "absent %"}]},
     "targets": [
-        target("A", HOST_ABSENT, "", format="table", instant=True),
-        target("B", HOST_REBOOTS, "", format="table", instant=True),
-        target("C", MAX_CPU_TEMPERATURE, "", format="table", instant=True),
-        target("D", f"sum by (environment) (increase({THROTTLES}[$__range]))", "", format="table", instant=True),
+        target("A", f"{HOST_ABSENT} and on(environment) {SELECTED_POOL_HOSTS}", "", format="table", instant=True),
+        target("B", f"{HOST_REBOOTS} and on(environment) {SELECTED_POOL_HOSTS}", "", format="table", instant=True),
+        target("C", f"{MAX_CPU_TEMPERATURE} and on(environment) {SELECTED_POOL_HOSTS}", "", format="table",
+               instant=True),
+        target("D", f"sum by (environment) (increase({THROTTLES}[$__range])) and on(environment) {SELECTED_POOL_HOSTS}",
+               "", format="table", instant=True),
         target("E", f"min by (environment) (avg_over_time({VALID_SAMPLES}[$__range:5m]) * 100)", "",
                format="table", instant=True),
     ],
@@ -334,7 +346,7 @@ host_heat = {
     "description": "Hottest CPU sensor of each selected server (left axis) and its CPU package thermal-throttle "
                    "events per 10 minutes (right axis, bars). Narrow the Server filter and compare with the validity "
                    "panel beside it.",
-    "datasource": DS, "gridPos": grid(0, 24, 12, 9),
+    "datasource": DS, "gridPos": grid(0, 25, 12, 9),
     "fieldConfig": {
         "defaults": {"color": {"mode": "palette-classic"}, "custom": LINES_NO_POINTS, "unit": "celsius"},
         "overrides": [{
@@ -350,8 +362,10 @@ host_heat = {
     "options": {"legend": {"calcs": ["max"], "displayMode": "table", "placement": "bottom", "showLegend": True},
                 "tooltip": MULTI_TOOLTIP},
     "targets": [
-        target("A", CPU_TEMPERATURE, "{{environment}} \u00b0C", range=True),
-        target("B", f"sum by (environment) (increase({THROTTLES}[10m]))", "{{environment}} throttle events",
+        target("A", f"{CPU_TEMPERATURE} and on(environment) {SELECTED_POOL_HOSTS_DAY}", "{{environment}} \u00b0C",
+               range=True),
+        target("B", f"sum by (environment) (increase({THROTTLES}[10m])) and on(environment) {SELECTED_POOL_HOSTS_DAY}",
+               "{{environment}} throttle events",
                interval="10m", range=True),
     ],
 }
@@ -360,7 +374,7 @@ pool_validity_over_time = {
     "id": 28, "type": "timeseries", "title": "Pool validity over time (per pool, 15-minute average)",
     "description": "Swimmer-count validity of each selected pool, averaged over 15 minutes, on the same time axis as "
                    "the heat panel beside it. A gap = the pool was under maintenance or its host was absent.",
-    "datasource": DS, "gridPos": grid(12, 24, 12, 9),
+    "datasource": DS, "gridPos": grid(12, 25, 12, 9),
     "fieldConfig": {
         "defaults": {"color": {"mode": "palette-classic"}, "custom": LINES_NO_POINTS, "unit": "percent",
                      "min": 0, "max": 100},
@@ -372,7 +386,9 @@ pool_validity_over_time = {
                        "{{site_name}} / {{pool_name}}", interval="15m", range=True)],
 }
 
-UPTIME_BY_CAUSE_ROW_HEIGHT = 33
+UPTIME_BY_CAUSE_ROW_HEIGHT = 25
+# The Cameras vs Software row is collapsed, so the rows below it start right after its header.
+SWIMMER_COUNT_VALIDITY_Y = UPTIME_BY_CAUSE_ROW_HEIGHT + 1
 
 # --- Availability Breakdown: Cameras vs Software --------------------------------------------------------------
 
@@ -481,7 +497,7 @@ validity_gauge = per_pool_bargauge(
     "Percentage of time each pool had a valid swimmer count over the selected time range. Planned maintenance "
     "windows (nightly restart / clean stop, cvs_maintenance_mode=1) are excluded via the cvs:swimmer_valid:bool "
     "recording rule. Lower = less stable.",
-    grid(0, UPTIME_BY_CAUSE_ROW_HEIGHT + 28, 12, 10),
+    grid(0, SWIMMER_COUNT_VALIDITY_Y + 1, 12, 10),
     f"avg(avg_over_time({VALID_SAMPLES}[$__range:5m]) * 100)",
     f"sort(avg_over_time({VALID_SAMPLES}[$__range:5m]) * 100)",
     {"color": {"mode": "continuous-RdYlGr"}, "thresholds": thresholds(RED_YELLOW_GREEN_80_95), "unit": "percent",
@@ -491,7 +507,7 @@ validity_gauge = per_pool_bargauge(
 
 validity_trend = daily_trend(
     4, "Daily Trend: Validity % (overall avg)", "Daily overall average of swimmer count validity percentage.",
-    grid(12, UPTIME_BY_CAUSE_ROW_HEIGHT + 28, 12, 10), VALIDITY_DAILY, "Validity %", {"mode": "fixed", "fixedColor": "green"}, "percent",
+    grid(12, SWIMMER_COUNT_VALIDITY_Y + 1, 12, 10), VALIDITY_DAILY, "Validity %", {"mode": "fixed", "fixedColor": "green"}, "percent",
     ES_ANY_LINK,
 )
 
@@ -502,7 +518,7 @@ incidents_gauge = per_pool_bargauge(
     6, "Estimated Incidents (per pool)",
     "Estimated number of validity state transitions per pool (valid↔invalid) over the selected range, divided "
     "by 2. Excludes non-operational pools (under_maintenance) and nightly clean restarts (cvs_maintenance_mode).",
-    grid(0, UPTIME_BY_CAUSE_ROW_HEIGHT + 39, 12, 8),
+    grid(0, SWIMMER_COUNT_VALIDITY_Y + 12, 12, 8),
     f"avg({INCIDENTS})",
     f"sort_desc({INCIDENTS})",
     {"color": {"mode": "continuous-BlYlRd"},
@@ -513,7 +529,7 @@ incidents_trend = daily_trend(
     7, "Daily Trend: Avg Incidents per Pool (overall avg)",
     "Daily overall average of invalid swimmer count incidents per pool. Excludes non-operational pools "
     "(under_maintenance) and nightly clean restarts (cvs_maintenance_mode).",
-    grid(12, UPTIME_BY_CAUSE_ROW_HEIGHT + 39, 12, 8),
+    grid(12, SWIMMER_COUNT_VALIDITY_Y + 12, 12, 8),
     f"avg(ceil(changes({VALID}[1d]) / 2) and on(pool_name, site_name) {VERSION})",
     "Incidents", {"mode": "fixed", "fixedColor": "orange"}, "short", ES_ANY_LINK, minimum=0,
 )
@@ -537,7 +553,7 @@ algo_exceptions_per_container = {
     "id": 11, "type": "barchart", "title": "Avg Exceptions per Pool by Algo Container",
     "description": "Average exception count per pool, grouped by algo container. Shows the mean across all matching "
                    "pools.",
-    "datasource": DS, "gridPos": grid(0, UPTIME_BY_CAUSE_ROW_HEIGHT + 48, 12, 8),
+    "datasource": DS, "gridPos": grid(0, SWIMMER_COUNT_VALIDITY_Y + 21, 12, 8),
     "targets": [target("A", " or ".join(service_exceptions_per_pool(service_name) for service_name in ALGO_SERVICES),
                        "{{service}}", instant=True)],
     "fieldConfig": {
@@ -552,7 +568,7 @@ algo_exceptions_trend = {
     **daily_trend(
         12, "Daily Trend: Avg Exceptions per Pool by Container",
         "Daily overall average of algo container exception counts per pool, grouped by service.",
-        grid(12, UPTIME_BY_CAUSE_ROW_HEIGHT + 48, 12, 8),
+        grid(12, SWIMMER_COUNT_VALIDITY_Y + 21, 12, 8),
         f"sum by (service) (increase({ALGO_EXCEPTIONS}[1d]) and {ON_POOL} {EXCEPTION_POOLS} "
         f"and on(pool_name, site_name) {VERSION}) / {POOL_COUNT}",
         "{{service}}", {"mode": "palette-classic"}, "short", ES_ALGO_LINK,
@@ -571,7 +587,7 @@ algo_exceptions_table = exception_table(
     9, "Algo Exceptions (detailed counts)",
     "Exception counts for algo containers (Detection, Ctm, Gtm, DecisionEngine) over the selected time range. "
     "Detailed breakdown by pool, service, and exception type.",
-    grid(0, UPTIME_BY_CAUSE_ROW_HEIGHT + 56, 24, 10), exception_counts(ALGO_EXCEPTIONS),
+    grid(0, SWIMMER_COUNT_VALIDITY_Y + 29, 24, 10), exception_counts(ALGO_EXCEPTIONS),
     "{{site_name}} / {{pool_name}} / {{service}} ({{exception_name}})",
     [], ["site_name", "pool_name", "environment", "service", "exception_name", "Value"],
 )
@@ -584,7 +600,7 @@ video_stream_exceptions_trend = daily_trend(
     14, "Daily Trend: Avg VideoStream Exceptions per Pool",
     "Daily overall average of VideoStream exception counts per pool. Tracked separately from algo containers "
     "because volume differs by orders of magnitude.",
-    grid(0, UPTIME_BY_CAUSE_ROW_HEIGHT + 67, 24, 8),
+    grid(0, SWIMMER_COUNT_VALIDITY_Y + 40, 24, 8),
     f"sum(increase({VIDEO_STREAM_EXCEPTIONS}[1d]) and {ON_POOL} {EXCEPTION_POOLS} "
     f"and on(pool_name, site_name) {VERSION}) / {POOL_COUNT}",
     "VideoStream", {"mode": "fixed", "fixedColor": "purple"}, "short", ES_VIDEO_STREAM_LINK, minimum=0,
@@ -593,24 +609,24 @@ video_stream_exceptions_trend = daily_trend(
 video_stream_exceptions_table = exception_table(
     15, "VideoStream Exceptions (detailed counts)",
     "VideoStream exception counts over the selected time range. Detailed breakdown by pool and exception type.",
-    grid(0, UPTIME_BY_CAUSE_ROW_HEIGHT + 75, 24, 10), exception_counts(VIDEO_STREAM_EXCEPTIONS),
+    grid(0, SWIMMER_COUNT_VALIDITY_Y + 48, 24, 10), exception_counts(VIDEO_STREAM_EXCEPTIONS),
     "{{site_name}} / {{pool_name}} ({{exception_name}})",
     ["service"], ["site_name", "pool_name", "environment", "exception_name", "Value"],
 )
 
 PANELS = [
     row(22, "Uptime by cause: camera/LAN, host absence, heat", 0),
-    validity_without_camera_time, validity_by_cause_trend, hosts_table, host_heat,
-    pool_validity_over_time,
-    row(20, "Availability Breakdown: Cameras vs Software", UPTIME_BY_CAUSE_ROW_HEIGHT + 0),
-    camera_availability, software_uptime_gauge, availability_trend, cameras_below_99,
-    row(1, "Swimmer Count Validity", UPTIME_BY_CAUSE_ROW_HEIGHT + 27),
+    validity_without_camera_time, validity_by_cause_trend, hosts_table,
+    row(29, "Heat and pool validity over time", 24, [host_heat, pool_validity_over_time]),
+    row(20, "Availability Breakdown: Cameras vs Software", UPTIME_BY_CAUSE_ROW_HEIGHT + 0,
+        [camera_availability, software_uptime_gauge, availability_trend, cameras_below_99]),
+    row(1, "Swimmer Count Validity", SWIMMER_COUNT_VALIDITY_Y),
     validity_gauge, validity_trend,
-    row(5, "Invalid Swimmer Count Incidents", UPTIME_BY_CAUSE_ROW_HEIGHT + 38),
+    row(5, "Invalid Swimmer Count Incidents", SWIMMER_COUNT_VALIDITY_Y + 11),
     incidents_gauge, incidents_trend,
-    row(8, "Algo Container Exceptions", UPTIME_BY_CAUSE_ROW_HEIGHT + 47),
+    row(8, "Algo Container Exceptions", SWIMMER_COUNT_VALIDITY_Y + 20),
     algo_exceptions_per_container, algo_exceptions_trend, algo_exceptions_table,
-    row(13, "VideoStream Exceptions", UPTIME_BY_CAUSE_ROW_HEIGHT + 66),
+    row(13, "VideoStream Exceptions", SWIMMER_COUNT_VALIDITY_Y + 39),
     video_stream_exceptions_trend, video_stream_exceptions_table,
 ]
 
