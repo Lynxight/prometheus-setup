@@ -812,7 +812,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "max_over_time((max by (environment) (node_hwmon_temp_celsius{job=\"nodeexporter\", chip=~\"platform_coretemp_.*\", environment=~\"$server\", group=~\"$deploy_group\"}))[$__range:5m])",
+          "expr": "max by (environment) (max_over_time(node_hwmon_temp_celsius{job=\"nodeexporter\", chip=~\"platform_coretemp_.*\", environment=~\"$server\", group=~\"$deploy_group\"}[$__range]))",
           "legendFormat": "",
           "refId": "C",
           "format": "table",

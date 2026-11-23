@@ -245,9 +245,11 @@ HOST_REBOOTS = (
     f"max by (environment) (sum_over_time((({BOOT_TIME} - last_over_time({BOOT_TIME}[1d] offset 5m)) > bool 120)"
     f"[$__range:5m]))"
 )
-CPU_TEMPERATURE = (
-    f'max by (environment) (node_hwmon_temp_celsius{{job="nodeexporter", chip=~"platform_coretemp_.*", {HOST}}})'
-)
+CPU_SENSOR_TEMPERATURE = f'node_hwmon_temp_celsius{{job="nodeexporter", chip=~"platform_coretemp_.*", {HOST}}}'
+CPU_TEMPERATURE = f"max by (environment) ({CPU_SENSOR_TEMPERATURE})"
+# The maximum of every raw sample in the range: a [$__range:5m] subquery reads one value per 5 minutes and misses
+# peaks between them.
+MAX_CPU_TEMPERATURE = f"max by (environment) (max_over_time({CPU_SENSOR_TEMPERATURE}[$__range]))"
 THROTTLES = f'node_cpu_package_throttles_total{{job="nodeexporter_lowfreq", {HOST}}}'
 
 
@@ -367,7 +369,7 @@ hosts_table = {
     "targets": [
         target("A", HOST_ABSENT, "", format="table", instant=True),
         target("B", HOST_REBOOTS, "", format="table", instant=True),
-        target("C", f"max_over_time(({CPU_TEMPERATURE})[$__range:5m])", "", format="table", instant=True),
+        target("C", MAX_CPU_TEMPERATURE, "", format="table", instant=True),
         target("D", f"sum by (environment) (increase({THROTTLES}[$__range]))", "", format="table", instant=True),
         target("E", f"min by (environment) (avg_over_time({VALID_SAMPLES}[$__range:5m]) * 100)", "",
                format="table", instant=True),
