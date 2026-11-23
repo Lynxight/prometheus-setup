@@ -719,8 +719,8 @@ dashboard = {
     "__inputs": [],
     "__requires": [{"type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0"}],
     "id": None,
-    "uid": "cvs-stability-metrics",
-    "title": "CVS Stability Metrics",
+    "uid": "cvs-stability-uptime-by-cause",
+    "title": "CVS Stability Metrics — Uptime by Cause",
     "description": "Monitor swimmer count validity counting every cause and with camera/LAN time removed, camera "
                    "health tested on the camera itself, host absence, reboots and heat, incidents, and algo "
                    "container exceptions",

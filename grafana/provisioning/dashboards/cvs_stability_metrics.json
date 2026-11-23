@@ -11,8 +11,8 @@
     }
   ],
   "id": null,
-  "uid": "cvs-stability-metrics",
-  "title": "CVS Stability Metrics",
+  "uid": "cvs-stability-uptime-by-cause",
+  "title": "CVS Stability Metrics \u2014 Uptime by Cause",
   "description": "Monitor swimmer count validity counting every cause and with camera/LAN time removed, camera health tested on the camera itself, host absence, reboots and heat, incidents, and algo container exceptions",
   "tags": [
     "cvs",
