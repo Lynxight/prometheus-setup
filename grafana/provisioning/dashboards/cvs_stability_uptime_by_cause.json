@@ -449,7 +449,7 @@
       "id": 26,
       "type": "table",
       "title": "Hosts: absence, reboots, heat (per server)",
-      "description": "Per server with a pool that passes the dashboard's filters in some hour of the selected range, over that range. 'absent %' = share of the range in which the cloud had no node-exporter sample from the host (5-minute grid, so the nightly monitoring restart and gaps under 5 minutes do not count; internet and power/host outages are not told apart here, and a host silent for the whole range has no row). 'reboots' = times the boot time moved by more than 2 minutes. 'max CPU \u00b0C' = hottest CPU sensor reading. 'throttle events' = CPU package thermal-throttle events. 'lowest pool validity %' = the swimmer-count validity of the host's worst selected pool. Sort by temperature or throttling to see whether downtime follows heat.",
+      "description": "Per server with a pool that passes the dashboard's filters in some hour of the selected range, over that range. 'absent %' = share of the range in which the cloud had no node-exporter sample from the host (5-minute grid, so the nightly monitoring restart and gaps under 5 minutes do not count; internet and power/host outages are not told apart here, and a host silent for the whole range has no row). 'reboots' = times the boot time moved by more than 60 seconds. 'max CPU \u00b0C' = hottest CPU sensor reading. 'throttle events' = CPU package thermal-throttle events. 'lowest pool validity %' = the swimmer-count validity of the host's worst selected pool. Sort by temperature or throttling to see whether downtime follows heat.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -602,7 +602,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "max by (environment) (sum_over_time(((node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"} - last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d] offset 5m)) > bool 120)[$__range:5m])) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
+          "expr": "max by (environment) (sum_over_time(((node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"} - last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d] offset 5m)) > bool 60)[$__range:5m])) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
           "legendFormat": "",
           "refId": "B",
           "format": "table",
@@ -666,6 +666,857 @@
       ]
     },
     {
+      "id": 30,
+      "type": "row",
+      "title": "Downtime split by cause (Prometheus only)",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "collapsed": true,
+      "panels": [
+        {
+          "id": 31,
+          "type": "table",
+          "title": "Downtime split by cause (per pool, hours)",
+          "description": "Each selected pool's downtime in the whole UTC days of the selected range, in hours, divided among causes tested in this order, each 5-minute step going to the first that matches: not measured (the server has no node-exporter data that day or the day before, or the server reported and the pool did not), server dead (the server reported the day before but not that day), camera (a camera of the pool reported a fault; switch/uplink when 80% or more of the server's cameras did at that step, camera hardware otherwise), reboot (the server's boot time moved by more than 60 s around that day: its silent steps, and invalid steps in the 15 minutes after a boot), site unreachable (silent steps without a reboot), unknown (the rest). Downtime = 5-minute steps outside 02:00-04:00 UTC with an invalid swimmer count or no report from the pool; maintenance is not downtime. A pool counts on a day when it reported that day or the day before. The day in progress is not included. Prometheus only: the WHY behind a reboot or an unknown step is in the signals table below.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "gridPos": {
+            "h": 11,
+            "w": 24,
+            "x": 0,
+            "y": 25
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "filterable": true
+              },
+              "decimals": 1,
+              "unit": "h"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Time"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "environment"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "server"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #A"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "downtime"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #B"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Not measured"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #C"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Server dead"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #D"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Camera: switch/uplink"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #E"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Camera: camera hardware"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #F"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Reboot"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #G"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Site unreachable"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #H"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Unknown"
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "downtime"
+              }
+            ]
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "sum_over_time((((264 - ((sum_over_time((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) + ((sum_over_time((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) * 0.08333333333333333)[$__range:1d])",
+              "legendFormat": "",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "sum_over_time((((((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) unless on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[2d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) * ((264 - ((sum_over_time((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) + ((sum_over_time((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) + (1 - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) unless on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[2d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) * (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + on(environment) group_left sum_over_time((group by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m])) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) - ((sum_over_time(((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on(environment) group by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"})) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)))) * 0.08333333333333333)[$__range:1d])",
+              "legendFormat": "",
+              "refId": "B",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "sum_over_time((((((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) (((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) and on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[2d:5m])) unless on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) * ((264 - ((sum_over_time((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + on(environment) group_left sum_over_time((group by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m])) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) - ((sum_over_time(((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on(environment) group by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"})) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))))) * 0.08333333333333333)[$__range:1d])",
+              "legendFormat": "",
+              "refId": "C",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "sum_over_time((((1 - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) unless on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[2d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) * ((sum_over_time((((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) and on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"})) and on(environment) ((count by (environment) (group by (environment, site_name, pool_name, camera_id) ((max_over_time(cvs_camera_health_state{environment=~\"$server\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\"}[6m] offset -3m) > 0)) or group by (environment, site_name, pool_name, camera_id) ((actual_fps{environment=~\"$server\"} <= 0.5) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\"})) / count by (environment) (group by (environment, site_name, pool_name, camera_id) (cvs_camera_health_state{environment=~\"$server\"}) or group by (environment, site_name, pool_name, camera_id) (actual_fps{environment=~\"$server\"}))) >= 0.8)) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) * 0.08333333333333333)[$__range:1d])",
+              "legendFormat": "",
+              "refId": "D",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "sum_over_time((((1 - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) unless on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[2d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) * ((sum_over_time((((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) and on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"})) unless on(environment) ((count by (environment) (group by (environment, site_name, pool_name, camera_id) ((max_over_time(cvs_camera_health_state{environment=~\"$server\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\"}[6m] offset -3m) > 0)) or group by (environment, site_name, pool_name, camera_id) ((actual_fps{environment=~\"$server\"} <= 0.5) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\"})) / count by (environment) (group by (environment, site_name, pool_name, camera_id) (cvs_camera_health_state{environment=~\"$server\"}) or group by (environment, site_name, pool_name, camera_id) (actual_fps{environment=~\"$server\"}))) >= 0.8)) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) * 0.08333333333333333)[$__range:1d])",
+              "legendFormat": "",
+              "refId": "E",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "sum_over_time((((((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) and on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) * (((sum_over_time((((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) unless on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"})) and on(environment) ((time() - node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}) < 900)) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) + (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) and on(environment) (max by (environment) ((min_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m] offset -1d) or max_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m])) - (max_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m] offset 1d) or min_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m]))) > 60))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) * ((264 - ((sum_over_time((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + on(environment) group_left sum_over_time((group by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m])) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) - ((sum_over_time(((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on(environment) group by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"})) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)))))) * 0.08333333333333333)[$__range:1d])",
+              "legendFormat": "",
+              "refId": "F",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "sum_over_time((((((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) and on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) * (1 - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) and on(environment) (max by (environment) ((min_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m] offset -1d) or max_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m])) - (max_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m] offset 1d) or min_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m]))) > 60))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) * ((264 - ((sum_over_time((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + on(environment) group_left sum_over_time((group by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m])) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) - ((sum_over_time(((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on(environment) group by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"})) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))))) * 0.08333333333333333)[$__range:1d])",
+              "legendFormat": "",
+              "refId": "G",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "sum_over_time((((1 - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) unless on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[2d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) * (((sum_over_time((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) - (((sum_over_time((((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) and on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"})) and on(environment) ((count by (environment) (group by (environment, site_name, pool_name, camera_id) ((max_over_time(cvs_camera_health_state{environment=~\"$server\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\"}[6m] offset -3m) > 0)) or group by (environment, site_name, pool_name, camera_id) ((actual_fps{environment=~\"$server\"} <= 0.5) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\"})) / count by (environment) (group by (environment, site_name, pool_name, camera_id) (cvs_camera_health_state{environment=~\"$server\"}) or group by (environment, site_name, pool_name, camera_id) (actual_fps{environment=~\"$server\"}))) >= 0.8)) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) + ((sum_over_time((((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) and on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"})) unless on(environment) ((count by (environment) (group by (environment, site_name, pool_name, camera_id) ((max_over_time(cvs_camera_health_state{environment=~\"$server\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\"}[6m] offset -3m) > 0)) or group by (environment, site_name, pool_name, camera_id) ((actual_fps{environment=~\"$server\"} <= 0.5) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\"})) / count by (environment) (group by (environment, site_name, pool_name, camera_id) (cvs_camera_health_state{environment=~\"$server\"}) or group by (environment, site_name, pool_name, camera_id) (actual_fps{environment=~\"$server\"}))) >= 0.8)) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) and on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) * ((sum_over_time((((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) unless on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"})) and on(environment) ((time() - node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}) < 900)) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)))) * 0.08333333333333333)[$__range:1d])",
+              "legendFormat": "",
+              "refId": "H",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "indexByName": {
+                  "site_name": 0,
+                  "pool_name": 1,
+                  "environment": 2,
+                  "Value #A": 3,
+                  "Value #B": 4,
+                  "Value #C": 5,
+                  "Value #D": 6,
+                  "Value #E": 7,
+                  "Value #F": 8,
+                  "Value #G": 9,
+                  "Value #H": 10,
+                  "Value #I": 11
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": 32,
+          "type": "timeseries",
+          "title": "Daily downtime by cause (all selected pools, hours)",
+          "description": "The selected pools' downtime of each UTC day, in hours, stacked by cause; the causes and their order are those of the table above. A point is drawn at the end of its day.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 24,
+            "x": 0,
+            "y": 36
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "bars",
+                "fillOpacity": 80,
+                "lineWidth": 1,
+                "stacking": {
+                  "mode": "normal"
+                },
+                "showPoints": "never"
+              },
+              "unit": "h",
+              "min": 0
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Not measured"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#8F8F8F",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Server dead"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "dark-red",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Camera: switch/uplink"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "dark-orange",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Camera: camera hardware"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "orange",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Reboot"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "blue",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Site unreachable"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "yellow",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Unknown"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "red",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "calcs": [
+                "sum"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "sum((((((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) unless on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[2d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) * ((264 - ((sum_over_time((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) + ((sum_over_time((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) + (1 - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) unless on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[2d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) * (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + on(environment) group_left sum_over_time((group by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m])) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) - ((sum_over_time(((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on(environment) group by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"})) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)))) * 0.08333333333333333))",
+              "legendFormat": "Not measured",
+              "refId": "B",
+              "range": true,
+              "interval": "1d"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "sum((((((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) (((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) and on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[2d:5m])) unless on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) * ((264 - ((sum_over_time((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + on(environment) group_left sum_over_time((group by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m])) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) - ((sum_over_time(((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on(environment) group by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"})) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))))) * 0.08333333333333333))",
+              "legendFormat": "Server dead",
+              "refId": "C",
+              "range": true,
+              "interval": "1d"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "sum((((1 - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) unless on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[2d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) * ((sum_over_time((((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) and on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"})) and on(environment) ((count by (environment) (group by (environment, site_name, pool_name, camera_id) ((max_over_time(cvs_camera_health_state{environment=~\"$server\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\"}[6m] offset -3m) > 0)) or group by (environment, site_name, pool_name, camera_id) ((actual_fps{environment=~\"$server\"} <= 0.5) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\"})) / count by (environment) (group by (environment, site_name, pool_name, camera_id) (cvs_camera_health_state{environment=~\"$server\"}) or group by (environment, site_name, pool_name, camera_id) (actual_fps{environment=~\"$server\"}))) >= 0.8)) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) * 0.08333333333333333))",
+              "legendFormat": "Camera: switch/uplink",
+              "refId": "D",
+              "range": true,
+              "interval": "1d"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "sum((((1 - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) unless on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[2d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) * ((sum_over_time((((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) and on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"})) unless on(environment) ((count by (environment) (group by (environment, site_name, pool_name, camera_id) ((max_over_time(cvs_camera_health_state{environment=~\"$server\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\"}[6m] offset -3m) > 0)) or group by (environment, site_name, pool_name, camera_id) ((actual_fps{environment=~\"$server\"} <= 0.5) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\"})) / count by (environment) (group by (environment, site_name, pool_name, camera_id) (cvs_camera_health_state{environment=~\"$server\"}) or group by (environment, site_name, pool_name, camera_id) (actual_fps{environment=~\"$server\"}))) >= 0.8)) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) * 0.08333333333333333))",
+              "legendFormat": "Camera: camera hardware",
+              "refId": "E",
+              "range": true,
+              "interval": "1d"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "sum((((((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) and on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) * (((sum_over_time((((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) unless on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"})) and on(environment) ((time() - node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}) < 900)) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) + (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) and on(environment) (max by (environment) ((min_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m] offset -1d) or max_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m])) - (max_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m] offset 1d) or min_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m]))) > 60))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) * ((264 - ((sum_over_time((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + on(environment) group_left sum_over_time((group by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m])) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) - ((sum_over_time(((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on(environment) group by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"})) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)))))) * 0.08333333333333333))",
+              "legendFormat": "Reboot",
+              "refId": "F",
+              "range": true,
+              "interval": "1d"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "sum((((((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) and on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) * (1 - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) and on(environment) (max by (environment) ((min_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m] offset -1d) or max_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m])) - (max_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m] offset 1d) or min_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m]))) > 60))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) * ((264 - ((sum_over_time((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + on(environment) group_left sum_over_time((group by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}) and on() (hour() < 2 or hour() >= 4))[1d:5m])) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) - ((sum_over_time(((group by (pool_name, site_name, environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}) and on(environment) group by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"})) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))))) * 0.08333333333333333))",
+              "legendFormat": "Site unreachable",
+              "refId": "G",
+              "range": true,
+              "interval": "1d"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "sum((((1 - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) unless on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[2d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) * (((sum_over_time((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) - (((sum_over_time((((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) and on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"})) and on(environment) ((count by (environment) (group by (environment, site_name, pool_name, camera_id) ((max_over_time(cvs_camera_health_state{environment=~\"$server\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\"}[6m] offset -3m) > 0)) or group by (environment, site_name, pool_name, camera_id) ((actual_fps{environment=~\"$server\"} <= 0.5) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\"})) / count by (environment) (group by (environment, site_name, pool_name, camera_id) (cvs_camera_health_state{environment=~\"$server\"}) or group by (environment, site_name, pool_name, camera_id) (actual_fps{environment=~\"$server\"}))) >= 0.8)) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) + ((sum_over_time((((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) and on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"})) unless on(environment) ((count by (environment) (group by (environment, site_name, pool_name, camera_id) ((max_over_time(cvs_camera_health_state{environment=~\"$server\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\"}[6m] offset -3m) > 0)) or group by (environment, site_name, pool_name, camera_id) ((actual_fps{environment=~\"$server\"} <= 0.5) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\"})) / count by (environment) (group by (environment, site_name, pool_name, camera_id) (cvs_camera_health_state{environment=~\"$server\"}) or group by (environment, site_name, pool_name, camera_id) (actual_fps{environment=~\"$server\"}))) >= 0.8)) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0))) - (((((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0) + 1) and on(pool_name, site_name, environment) ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) and on(environment) last_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[1d:5m]))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)) * ((sum_over_time((((group by (pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0) unless on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) ((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0)) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"})) and on(environment) ((time() - node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}) < 900)) and on() (hour() < 2 or hour() >= 4))[1d:5m]) and on(pool_name, site_name, environment) (group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0))) or ((group by (pool_name, site_name, environment) (last_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[2d:5m])) and on(pool_name, site_name, environment) (last_over_time(docker_version_tag[2d:5m]) == $cvs_version or last_over_time(docker_version_tag[2d:5m]) * (1 - ($cvs_version > bool 0)) > 0)) * 0)))) * 0.08333333333333333))",
+              "legendFormat": "Unknown",
+              "refId": "H",
+              "range": true,
+              "interval": "1d"
+            }
+          ]
+        },
+        {
+          "id": 33,
+          "type": "table",
+          "title": "Downtime signals: rise above the server's baseline (per server)",
+          "description": "For each server with a selected pool, how many more times each failure was reported to Prometheus in the selected range than in the window of the same length before it (0 = no rise). 'not measured' = the server's CVS version does not push that metric, or the server pushed nothing. Counts: CUDA failures = exceptions a service reported that came from CUDA (the first one of a service never counts: the metric holds the time of the last one); DNS lookup failures and port 53 = failed hourly connection tests; IoT publish/connect failures and expired cloud messages = the CloudGateway's link to AWS IoT; camera stream errors and pipeline stalls = VideoStream; camera settings push failures = cameras whose last push failed; OCR failures = OCR runs where every attempt failed.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 45
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "filterable": true
+              },
+              "decimals": 0,
+              "noValue": "not measured"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Time"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "environment"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "server"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #A"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "CUDA failures"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #B"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "DNS lookup failures"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #C"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Port 53 unreachable"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #D"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "IoT publish failures"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #E"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "IoT connect failures"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #F"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Cloud messages expired"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #G"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Camera stream errors"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #H"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Pipeline stalls"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #I"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Camera settings push failures"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #J"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "OCR failures"
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "clamp_min(sum by (environment) (changes(cvs_last_cuda_failure_timestamp_seconds{environment=~\"$server\"}[$__range])) - (sum by (environment) (changes(cvs_last_cuda_failure_timestamp_seconds{environment=~\"$server\"}[$__range] offset $__range)) or sum by (environment) (changes(cvs_last_cuda_failure_timestamp_seconds{environment=~\"$server\"}[$__range])) * 0), 0) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
+              "legendFormat": "",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "clamp_min(sum by (environment) (increase(cvs_test_connection_failed{environment=~\"$server\", error=\"gaierror\"}[$__range])) - (sum by (environment) (increase(cvs_test_connection_failed{environment=~\"$server\", error=\"gaierror\"}[$__range] offset $__range)) or sum by (environment) (increase(cvs_test_connection_failed{environment=~\"$server\", error=\"gaierror\"}[$__range])) * 0), 0) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
+              "legendFormat": "",
+              "refId": "B",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "clamp_min(sum by (environment) (increase(cvs_test_connection_failed{environment=~\"$server\", port=\"53\"}[$__range])) - (sum by (environment) (increase(cvs_test_connection_failed{environment=~\"$server\", port=\"53\"}[$__range] offset $__range)) or sum by (environment) (increase(cvs_test_connection_failed{environment=~\"$server\", port=\"53\"}[$__range])) * 0), 0) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
+              "legendFormat": "",
+              "refId": "C",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "clamp_min(sum by (environment) (increase(iot_mqtt{environment=~\"$server\", error=\"true\"}[$__range])) - (sum by (environment) (increase(iot_mqtt{environment=~\"$server\", error=\"true\"}[$__range] offset $__range)) or sum by (environment) (increase(iot_mqtt{environment=~\"$server\", error=\"true\"}[$__range])) * 0), 0) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
+              "legendFormat": "",
+              "refId": "D",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "clamp_min(sum by (environment) (increase(iot_provision_failure_count{environment=~\"$server\"}[$__range])) - (sum by (environment) (increase(iot_provision_failure_count{environment=~\"$server\"}[$__range] offset $__range)) or sum by (environment) (increase(iot_provision_failure_count{environment=~\"$server\"}[$__range])) * 0), 0) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
+              "legendFormat": "",
+              "refId": "E",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "clamp_min(sum by (environment) (increase(cloud_outbox_expired{environment=~\"$server\"}[$__range])) - (sum by (environment) (increase(cloud_outbox_expired{environment=~\"$server\"}[$__range] offset $__range)) or sum by (environment) (increase(cloud_outbox_expired{environment=~\"$server\"}[$__range])) * 0), 0) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
+              "legendFormat": "",
+              "refId": "F",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "clamp_min(sum by (environment) (increase(video_stream_error_v2{environment=~\"$server\", exception_name=~\"StreamTimeoutError|StreamTerminatedError\"}[$__range])) - (sum by (environment) (increase(video_stream_error_v2{environment=~\"$server\", exception_name=~\"StreamTimeoutError|StreamTerminatedError\"}[$__range] offset $__range)) or sum by (environment) (increase(video_stream_error_v2{environment=~\"$server\", exception_name=~\"StreamTimeoutError|StreamTerminatedError\"}[$__range])) * 0), 0) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
+              "legendFormat": "",
+              "refId": "G",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "clamp_min(sum by (environment) (increase(cvs_exc_per_service{environment=~\"$server\", service=\"VideoStream\", exception_name=\"PipelineStallError\"}[$__range])) - (sum by (environment) (increase(cvs_exc_per_service{environment=~\"$server\", service=\"VideoStream\", exception_name=\"PipelineStallError\"}[$__range] offset $__range)) or sum by (environment) (increase(cvs_exc_per_service{environment=~\"$server\", service=\"VideoStream\", exception_name=\"PipelineStallError\"}[$__range])) * 0), 0) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
+              "legendFormat": "",
+              "refId": "H",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "clamp_min(sum by (environment) (max_over_time(camera_configurator_failure{environment=~\"$server\"}[$__range])) - (sum by (environment) (max_over_time(camera_configurator_failure{environment=~\"$server\"}[$__range] offset $__range)) or sum by (environment) (max_over_time(camera_configurator_failure{environment=~\"$server\"}[$__range])) * 0), 0) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
+              "legendFormat": "",
+              "refId": "I",
+              "format": "table",
+              "instant": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "clamp_min(sum by (environment) (increase(ocr_failure{environment=~\"$server\"}[$__range])) - (sum by (environment) (increase(ocr_failure{environment=~\"$server\"}[$__range] offset $__range)) or sum by (environment) (increase(ocr_failure{environment=~\"$server\"}[$__range])) * 0), 0) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
+              "legendFormat": "",
+              "refId": "J",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "indexByName": {
+                  "environment": 0,
+                  "Value #A": 1,
+                  "Value #B": 2,
+                  "Value #C": 3,
+                  "Value #D": 4,
+                  "Value #E": 5,
+                  "Value #F": 6,
+                  "Value #G": 7,
+                  "Value #H": 8,
+                  "Value #I": 9,
+                  "Value #J": 10
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": 29,
       "type": "row",
       "title": "Heat and pool validity over time",
@@ -673,7 +1524,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 25
       },
       "collapsed": true,
       "panels": [
@@ -690,7 +1541,7 @@
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 25
+            "y": 26
           },
           "fieldConfig": {
             "defaults": {
@@ -785,7 +1636,7 @@
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 25
+            "y": 26
           },
           "fieldConfig": {
             "defaults": {
@@ -843,7 +1694,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 26
       },
       "collapsed": true,
       "panels": [
@@ -860,7 +1711,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 26
+            "y": 27
           },
           "targets": [
             {
@@ -966,7 +1817,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 26
+            "y": 27
           },
           "targets": [
             {
@@ -1084,7 +1935,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 36
+            "y": 37
           },
           "targets": [
             {
@@ -1216,7 +2067,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 44
+            "y": 45
           },
           "targets": [
             {
@@ -1384,7 +2235,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 27
       },
       "collapsed": false
     },
@@ -1401,7 +2252,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 27
+        "y": 28
       },
       "targets": [
         {
@@ -1507,7 +2358,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 27
+        "y": 28
       },
       "targets": [
         {
@@ -1572,7 +2423,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 37
+        "y": 38
       },
       "collapsed": false
     },
@@ -1589,7 +2440,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 38
+        "y": 39
       },
       "targets": [
         {
@@ -1690,7 +2541,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 38
+        "y": 39
       },
       "targets": [
         {
@@ -1756,7 +2607,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 46
+        "y": 47
       },
       "collapsed": false
     },
@@ -1773,7 +2624,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 47
+        "y": 48
       },
       "targets": [
         {
@@ -1841,7 +2692,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 47
+        "y": 48
       },
       "targets": [
         {
@@ -1910,7 +2761,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 55
+        "y": 56
       },
       "targets": [
         {
@@ -2079,7 +2930,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 65
+        "y": 66
       },
       "collapsed": false
     },
@@ -2096,7 +2947,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 66
+        "y": 67
       },
       "targets": [
         {
@@ -2167,7 +3018,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 74
+        "y": 75
       },
       "targets": [
         {
