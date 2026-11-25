@@ -449,7 +449,7 @@
       "id": 26,
       "type": "table",
       "title": "Hosts: absence, reboots, heat (per server)",
-      "description": "Per server with a pool that passes the dashboard's filters in some hour of the selected range, over that range. 'absent %' = share of the 5-minute steps of the range in which the cloud had node-exporter samples from some host but none from this one (so the future part of the range and gaps in the cloud's own data do not count, nor do the nightly monitoring restart and gaps under 5 minutes; internet and power/host outages are not told apart here, and a host silent for the whole range has no row).'reboots' = times the boot time moved by more than 2 minutes. 'max CPU \u00b0C' = hottest CPU sensor reading. 'throttle events' = CPU package thermal-throttle events. 'lowest pool validity %' = the swimmer-count validity of the host's worst selected pool. Sort by temperature or throttling to see whether downtime follows heat.",
+      "description": "Per server with a pool that passes the dashboard's filters in some hour of the selected range, over that range. 'absent %' = share of the 5-minute steps of the range in which the cloud had node-exporter samples from some host but none from this one (so the future part of the range and gaps in the cloud's own data do not count, nor do the nightly monitoring restart and gaps under 5 minutes; internet and power/host outages are not told apart here, and a host silent for the whole range has no row). 'reboots' = times the boot time moved by more than 2 minutes. '% time at CPU limit' = share of the range in which a CPU sensor was at or above its chip's critical temperature (the sensor's own alarm flag; blank = the host does not report it). '% time throttling' = share of the range in which the CPU package was thermal-throttled. Both are read on a 5-minute grid. 'lowest pool validity %' = the swimmer-count validity of the host's worst selected pool. Sort by heat or throttling to see whether downtime follows heat.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -532,11 +532,11 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "max CPU \u00b0C"
+                "value": "% time at CPU limit"
               },
               {
                 "id": "unit",
-                "value": "celsius"
+                "value": "percent"
               }
             ]
           },
@@ -548,11 +548,11 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "throttle events"
+                "value": "% time throttling"
               },
               {
-                "id": "decimals",
-                "value": 0
+                "id": "unit",
+                "value": "percent"
               }
             ]
           },
@@ -614,7 +614,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "max by (environment) (max_over_time(node_hwmon_temp_celsius{job=\"nodeexporter\", chip=~\"platform_coretemp_.*\", environment=~\"$server\", group=~\"$deploy_group\"}[$__range])) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
+          "expr": "avg_over_time((max by (environment) (node_hwmon_temp_crit_alarm_celsius{job=\"nodeexporter\", chip=~\"platform_coretemp_.*\", environment=~\"$server\", group=~\"$deploy_group\"}))[$__range:5m]) * 100 and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
           "legendFormat": "",
           "refId": "C",
           "format": "table",
@@ -626,7 +626,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "sum by (environment) (increase(node_cpu_package_throttles_total{job=\"nodeexporter_lowfreq\", environment=~\"$server\", group=~\"$deploy_group\"}[$__range])) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
+          "expr": "avg_over_time((sum by (environment) (increase(node_cpu_package_throttles_total{job=\"nodeexporter_lowfreq\", environment=~\"$server\", group=~\"$deploy_group\"}[5m])) > bool 0)[$__range:5m]) * 100 and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
           "legendFormat": "",
           "refId": "D",
           "format": "table",

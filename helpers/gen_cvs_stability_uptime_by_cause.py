@@ -238,10 +238,17 @@ HOST_REBOOTS = (
 )
 CPU_SENSOR_TEMPERATURE = f'node_hwmon_temp_celsius{{job="nodeexporter", chip=~"platform_coretemp_.*", {HOST}}}'
 CPU_TEMPERATURE = f"max by (environment) ({CPU_SENSOR_TEMPERATURE})"
-# The maximum of every raw sample in the range: a [$__range:5m] subquery reads one value per 5 minutes and misses
-# peaks between them.
-MAX_CPU_TEMPERATURE = f"max by (environment) (max_over_time({CPU_SENSOR_TEMPERATURE}[$__range]))"
+# Each CPU sensor's own over-limit flag (1 at or above the chip's critical temperature). A share of time at the limit
+# separates a host that runs hot from a busy one: the hottest reading of a week reaches the limit on any busy host,
+# and limits differ between chips.
+CPU_CRIT_ALARM = f'node_hwmon_temp_crit_alarm_celsius{{job="nodeexporter", chip=~"platform_coretemp_.*", {HOST}}}'
+CPU_AT_LIMIT_PERCENT = f"avg_over_time((max by (environment) ({CPU_CRIT_ALARM}))[$__range:5m]) * 100"
 THROTTLES = f'node_cpu_package_throttles_total{{job="nodeexporter_lowfreq", {HOST}}}'
+# The share of 5-minute steps in which the package throttle counter rose. A count of throttle events runs into the
+# millions on a hot host and cannot be compared between hosts.
+CPU_THROTTLING_PERCENT = (
+    f"avg_over_time((sum by (environment) (increase({THROTTLES}[5m])) > bool 0)[$__range:5m]) * 100"
+)
 # The host panels show the servers that had a pool passing the dashboard's filters in some hour of the range, so a
 # host that went silent before the end of the range keeps its row; joining on the current sample would drop it.
 SELECTED_POOL_HOSTS = f"group by (environment) (max_over_time({SWIMMER_COUNT}[$__range:1h]))"
@@ -309,10 +316,13 @@ hosts_table = {
                    "the cloud had node-exporter samples from some host but none from this one (so the future part "
                    "of the range and gaps in the cloud's own data do not count, nor do the nightly monitoring "
                    "restart and gaps under 5 minutes; internet and power/host outages are not told apart here, and "
-                   "a host silent for the whole range has no row).'reboots' = times the boot time moved by more than "
-                   "2 minutes. 'max CPU \u00b0C' = hottest CPU sensor reading. 'throttle events' = CPU package "
-                   "thermal-throttle events. 'lowest pool validity %' = the swimmer-count validity of the host's "
-                   "worst selected pool. Sort by temperature or throttling to see whether downtime follows heat.",
+                   "a host silent for the whole range has no row). 'reboots' = times the boot time moved by more "
+                   "than 2 minutes. '% time at CPU limit' = share of the range in which a CPU sensor was at or "
+                   "above its chip's critical temperature (the sensor's own alarm flag; blank = the host does not "
+                   "report it). '% time throttling' = share of the range in which the CPU package was "
+                   "thermal-throttled. Both are read on a 5-minute grid. 'lowest pool validity %' = the "
+                   "swimmer-count validity of the host's worst selected pool. Sort by heat or throttling to see "
+                   "whether downtime follows heat.",
     "datasource": DS, "gridPos": grid(0, 13, 24, 11),
     "fieldConfig": {
         "defaults": {"custom": {"filterable": True}, "decimals": 1},
@@ -321,8 +331,8 @@ hosts_table = {
             rename("environment", "server"),
             rename("Value #A", "absent %", {"id": "unit", "value": "percent"}),
             rename("Value #B", "reboots", {"id": "decimals", "value": 0}),
-            rename("Value #C", "max CPU \u00b0C", {"id": "unit", "value": "celsius"}),
-            rename("Value #D", "throttle events", {"id": "decimals", "value": 0}),
+            rename("Value #C", "% time at CPU limit", {"id": "unit", "value": "percent"}),
+            rename("Value #D", "% time throttling", {"id": "unit", "value": "percent"}),
             rename("Value #E", "lowest pool validity %", {"id": "unit", "value": "percent"}),
         ],
     },
@@ -330,10 +340,10 @@ hosts_table = {
     "targets": [
         target("A", f"{HOST_ABSENT} and on(environment) {SELECTED_POOL_HOSTS}", "", format="table", instant=True),
         target("B", f"{HOST_REBOOTS} and on(environment) {SELECTED_POOL_HOSTS}", "", format="table", instant=True),
-        target("C", f"{MAX_CPU_TEMPERATURE} and on(environment) {SELECTED_POOL_HOSTS}", "", format="table",
+        target("C", f"{CPU_AT_LIMIT_PERCENT} and on(environment) {SELECTED_POOL_HOSTS}", "", format="table",
                instant=True),
-        target("D", f"sum by (environment) (increase({THROTTLES}[$__range])) and on(environment) {SELECTED_POOL_HOSTS}",
-               "", format="table", instant=True),
+        target("D", f"{CPU_THROTTLING_PERCENT} and on(environment) {SELECTED_POOL_HOSTS}", "", format="table",
+               instant=True),
         target("E", f"min by (environment) (avg_over_time({VALID_SAMPLES}[$__range:5m]) * 100)", "",
                format="table", instant=True),
     ],
