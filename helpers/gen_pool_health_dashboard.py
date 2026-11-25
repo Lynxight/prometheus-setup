@@ -11,7 +11,7 @@ import pathlib
 DS = {"type": "prometheus", "uid": "PBFA97CFB590B2093"}
 F = 'environment=~"$server", site_name=~"$site_name", pool_name=~"$pool_name"'
 # other metrics get swimmer_count's presence via this join (same convention
-# as cvs_stability_metrics.json)
+# as cvs_stability_uptime_by_cause.json)
 SW_JOIN = f" and on(site_name, pool_name, environment) swimmer_count{{{F}}}"
 # excludes nightly restart / clean stops from the %-compliance gauges,
 # matching the swimmer-count gauge (which gets this via cvs:swimmer_valid:bool)
