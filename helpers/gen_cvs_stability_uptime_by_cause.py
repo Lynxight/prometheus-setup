@@ -27,7 +27,13 @@ VERSION = "(docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cv
 VALID = f"cvs:swimmer_valid:bool{{{FULL}}}"
 SWIMMER_COUNT = f"swimmer_count{{{FULL}}}"
 VALID_SAMPLES = f"({VALID} and {ON_POOL} {VERSION})"
-POOL_COUNT = f"scalar(count(count {BY_POOL} ({SWIMMER_COUNT})))"
+
+
+def pool_count(window):
+    """The number of pools that pass the dashboard's filters at some point in `window`, so a pool that stopped
+    reporting before the end of the window still counts for the time it reported."""
+    return f"scalar(count(count {BY_POOL} (max_over_time({SWIMMER_COUNT}[{window}:1h]))))"
+
 
 # Every camera of the pool above 0.5 fps: VideoStream's frame rate as a stand-in for camera health, used only for
 # pools whose CVS image does not push cvs_camera_health_state.
@@ -41,6 +47,15 @@ EXCEPTION_POOLS = (
     'swimmer_count{environment=~"$server", pool_state=~"$pool_state", group=~"$deploy_group", '
     'under_maintenance=~"$under_maintenance"}'
 )
+
+
+def exceptions_while_pool_selected(exceptions, window):
+    """The increase of `exceptions` over `window`, for the pools that passed the dashboard's filters at some point in
+    that window: each window is filtered by its own pool state, not by the state at the end of the range."""
+    return (
+        f"(increase({exceptions}[{window}]) and {ON_POOL} max_over_time({EXCEPTION_POOLS}[{window}]) "
+        f"and {ON_POOL} {VERSION})"
+    )
 ALGO_SERVICES = ["Detection", "Ctm", "Gtm", "DecisionEngine"]
 ALGO_SERVICE_REGEX = "|".join(ALGO_SERVICES)
 
@@ -576,8 +591,8 @@ def service_exceptions_per_pool(service_name):
     """Average exceptions of one algo service per pool, or 0 so the service keeps its bar."""
     exceptions = f'cvs_exc_per_service{{{EXCEPTIONS}, service="{service_name}"}}'
     return (
-        f"(sum by (service) (sum_over_time((increase({exceptions}[1h]) and {ON_POOL} {VERSION})[$__range:1h]) "
-        f"and {ON_POOL} {EXCEPTION_POOLS}) / {POOL_COUNT} "
+        f"(sum by (service) (sum_over_time({exceptions_while_pool_selected(exceptions, '1h')}[$__range:1h])) "
+        f"/ {pool_count('$__range')} "
         f'or label_replace(vector(0), "service", "{service_name}", "", ""))'
     )
 
@@ -590,13 +605,15 @@ algo_exceptions_per_container = {
                    "pools.",
     "datasource": DS, "gridPos": grid(0, SWIMMER_COUNT_VALIDITY_Y + 21, 12, 8),
     "targets": [target("A", " or ".join(service_exceptions_per_pool(service_name) for service_name in ALGO_SERVICES),
-                       "{{service}}", instant=True)],
+                       "{{service}}", format="table", instant=True)],
     "fieldConfig": {
         "defaults": {"color": {"mode": "palette-classic"}, "unit": "short", "links": [ES_ALGO_LINK]},
         "overrides": [{"matcher": {"id": "byName", "options": "Time"}, "properties": [
             {"id": "custom.hideFrom", "value": {"legend": True, "tooltip": True, "viz": True}}]}],
     },
-    "options": {"orientation": "horizontal", "showValue": "always", "barWidth": 0.8, "groupWidth": 0.7},
+    # One bar per service, labelled by the service; without xField the bar chart puts the query time on the axis.
+    "options": {"orientation": "horizontal", "xField": "service", "colorByField": "service", "showValue": "always",
+                "barWidth": 0.8, "groupWidth": 0.7},
 }
 
 algo_exceptions_trend = {
@@ -604,18 +621,14 @@ algo_exceptions_trend = {
         12, "Daily Trend: Avg Exceptions per Pool by Container",
         "Daily overall average of algo container exception counts per pool, grouped by service.",
         grid(12, SWIMMER_COUNT_VALIDITY_Y + 21, 12, 8),
-        f"sum by (service) (increase({ALGO_EXCEPTIONS}[1d]) and {ON_POOL} {EXCEPTION_POOLS} "
-        f"and on(pool_name, site_name) {VERSION}) / {POOL_COUNT}",
+        f"sum by (service) ({exceptions_while_pool_selected(ALGO_EXCEPTIONS, '1d')}) / {pool_count('1d')}",
         "{{service}}", {"mode": "palette-classic"}, "short", ES_ALGO_LINK,
     ),
 }
 
 
 def exception_counts(exceptions):
-    return (
-        f"(round(sum_over_time((increase({exceptions}[1h]) and {ON_POOL} {VERSION})[$__range:1h])) "
-        f"and {ON_POOL} {EXCEPTION_POOLS}) > 0"
-    )
+    return f"round(sum_over_time({exceptions_while_pool_selected(exceptions, '1h')}[$__range:1h])) > 0"
 
 
 algo_exceptions_table = exception_table(
@@ -636,8 +649,7 @@ video_stream_exceptions_trend = daily_trend(
     "Daily overall average of VideoStream exception counts per pool. Tracked separately from algo containers "
     "because volume differs by orders of magnitude.",
     grid(0, SWIMMER_COUNT_VALIDITY_Y + 40, 24, 8),
-    f"sum(increase({VIDEO_STREAM_EXCEPTIONS}[1d]) and {ON_POOL} {EXCEPTION_POOLS} "
-    f"and on(pool_name, site_name) {VERSION}) / {POOL_COUNT}",
+    f"sum({exceptions_while_pool_selected(VIDEO_STREAM_EXCEPTIONS, '1d')}) / {pool_count('1d')}",
     "VideoStream", {"mode": "fixed", "fixedColor": "purple"}, "short", ES_VIDEO_STREAM_LINK, minimum=0,
 )
 
