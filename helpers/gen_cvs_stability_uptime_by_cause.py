@@ -27,15 +27,17 @@ VERSION = "(docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cv
 VALID = f"cvs:swimmer_valid:bool{{{FULL}}}"
 SWIMMER_COUNT = f"swimmer_count{{{FULL}}}"
 VALID_SAMPLES = f"({VALID} and {ON_POOL} {VERSION})"
-POOL_COUNT = f"scalar(count(count {BY_POOL} ({SWIMMER_COUNT})))"
 
-# Every camera of the pool above 0.5 fps: VideoStream's frame rate as a stand-in for camera health.
+
+def pool_count(window):
+    """The number of pools that pass the dashboard's filters at some point in `window`, so a pool that stopped
+    reporting before the end of the window still counts for the time it reported."""
+    return f"scalar(count(count {BY_POOL} (max_over_time({SWIMMER_COUNT}[{window}:1h]))))"
+
+
+# Every camera of the pool above 0.5 fps: VideoStream's frame rate as a stand-in for camera health, used only for
+# pools whose CVS image does not push cvs_camera_health_state.
 CAMERAS_UP_FPS = f"(min {BY_POOL} (actual_fps{{{POOL}}}) > bool 0.5)"
-CAMERAS_UP_SAMPLES = (
-    f"(({CAMERAS_UP_FPS} and {ON_POOL} (cvs_maintenance_mode == 0)) and {ON_POOL} {SWIMMER_COUNT} "
-    f"and {ON_POOL} {VERSION})"
-)
-VALID_WHILE_CAMERAS_UP = f"(({VALID} and {ON_POOL} ({CAMERAS_UP_FPS} == 1)) and {ON_POOL} {VERSION})"
 
 EXCEPTIONS = (
     f'{POOL}, group=~"$deploy_group", under_maintenance=~"$under_maintenance", '
@@ -45,6 +47,15 @@ EXCEPTION_POOLS = (
     'swimmer_count{environment=~"$server", pool_state=~"$pool_state", group=~"$deploy_group", '
     'under_maintenance=~"$under_maintenance"}'
 )
+
+
+def exceptions_while_pool_selected(exceptions, window):
+    """The increase of `exceptions` over `window`, for the pools that passed the dashboard's filters at some point in
+    that window: each window is filtered by its own pool state, not by the state at the end of the range."""
+    return (
+        f"(increase({exceptions}[{window}]) and {ON_POOL} max_over_time({EXCEPTION_POOLS}[{window}]) "
+        f"and {ON_POOL} {VERSION})"
+    )
 ALGO_SERVICES = ["Detection", "Ctm", "Gtm", "DecisionEngine"]
 ALGO_SERVICE_REGEX = "|".join(ALGO_SERVICES)
 
@@ -202,14 +213,15 @@ ON_CAMERA = "on(pool_name, site_name, environment, camera_id)"
 CAMERA_HEALTH = f"cvs_camera_health_state{{{POOL}}}"
 CAMERA_HEALTH_PUSH_TIME = f'push_time_seconds{{name="cvs_camera_health_state", {POOL}}}'
 
-# A camera of the pool reports 1 or 2 between one minute before and three minutes after the sample, in a report
-# that was renewed in that window: the first probe comes a minute or two after the pool stops, and the
-# pushgateway keeps a stopped health service's last value, which is unknown, not a camera fault.
-POOL_CAMERA_FAULT_REPORTED = (
-    f"max {BY_POOL} ((max_over_time({CAMERA_HEALTH}[4m] offset -3m) > 0) "
+# The camera reports 1 or 2 between one minute before and three minutes after the sample, in a report that was
+# renewed in that window: the first probe comes a minute or two after the pool stops, and the pushgateway keeps a
+# stopped health service's last value, which is unknown, not a camera fault.
+CAMERA_FAULT_REPORTED = (
+    f"((max_over_time({CAMERA_HEALTH}[4m] offset -3m) > 0) "
     f"and {ON_CAMERA} (changes({CAMERA_HEALTH_PUSH_TIME}[6m] offset -3m) > 0))"
 )
-# Pools whose CVS image has no camera health gauge: a camera below 0.5 fps, as in the Cameras vs Software row.
+POOL_CAMERA_FAULT_REPORTED = f"max {BY_POOL} ({CAMERA_FAULT_REPORTED})"
+# Pools whose CVS image has no camera health gauge: a camera below 0.5 fps.
 POOL_CAMERA_FAULT_BY_FPS = f"({CAMERAS_UP_FPS} == 0) unless {ON_POOL} {CAMERA_HEALTH}"
 POOL_CAMERA_FAULT = f"({POOL_CAMERA_FAULT_REPORTED} or {POOL_CAMERA_FAULT_BY_FPS})"
 # The validity samples that remain once the invalid ones with a camera/LAN fault are taken out.
@@ -223,9 +235,16 @@ CAMERA_DOWNTIME = (
 
 HOST = 'environment=~"$server", group=~"$deploy_group"'
 BOOT_TIME = f'node_boot_time_seconds{{job="nodeexporter", {HOST}}}'
-# A 5-minute grid: the nightly monitoring restart and other gaps under 5 minutes do not count as absence.
+# Absence is counted against the 5-minute steps in which the cloud had a sample from any host, not against the
+# length of the range: a range that ends in the future, or a gap in the cloud's own data, would otherwise count as
+# absence of every host. The fleet count ignores the dashboard's filters, so a filter that selects only an absent
+# host still has steps to count against. The 5-minute grid keeps the nightly monitoring restart and other gaps
+# under 5 minutes out. A host's presence is counted per host, not per series: when a label of its boot-time series
+# changes, each series covers only part of the range, and taking the worst series would read as near-total absence.
+FLEET_BOOT_TIME = 'node_boot_time_seconds{job="nodeexporter"}'
 HOST_ABSENT = (
-    f"max by (environment) (clamp_min(1 - count_over_time({BOOT_TIME}[$__range:5m]) / ($__range_s / 300), 0) * 100)"
+    f"clamp_min(1 - count_over_time((count by (environment) ({BOOT_TIME}))[$__range:5m]) "
+    f"/ scalar(count_over_time(count({FLEET_BOOT_TIME})[$__range:5m])), 0) * 100"
 )
 # The boot time also moves by seconds when the clock is stepped; a reboot moves it by more than REBOOT_SECONDS.
 REBOOT_SECONDS = 60
@@ -236,10 +255,16 @@ HOST_REBOOTS = (
 )
 CPU_SENSOR_TEMPERATURE = f'node_hwmon_temp_celsius{{job="nodeexporter", chip=~"platform_coretemp_.*", {HOST}}}'
 CPU_TEMPERATURE = f"max by (environment) ({CPU_SENSOR_TEMPERATURE})"
-# The maximum of every raw sample in the range: a [$__range:5m] subquery reads one value per 5 minutes and misses
-# peaks between them.
-MAX_CPU_TEMPERATURE = f"max by (environment) (max_over_time({CPU_SENSOR_TEMPERATURE}[$__range]))"
 THROTTLES = f'node_cpu_package_throttles_total{{job="nodeexporter_lowfreq", {HOST}}}'
+
+
+def cpu_throttling_percent(window):
+    """Share of the 5-minute steps in `window` with at least one CPU package thermal-throttle event. Throttling is
+    the CPU's own judgement that it is too hot, made at each chip's own limit, so it separates a host that runs hot
+    from a busy one; the hottest reading of a week reaches the limit on any busy host, and the sensors' critical
+    alarm stays off because throttling holds the temperature below it. A count of events runs into the millions on
+    a hot host and cannot be compared between hosts."""
+    return f"avg_over_time((sum by (environment) (increase({THROTTLES}[5m])) > bool 0)[{window}:5m]) * 100"
 # The host panels show the servers that had a pool passing the dashboard's filters in some hour of the range, so a
 # host that went silent before the end of the range keeps its row; joining on the current sample would drop it.
 SELECTED_POOL_HOSTS = f"group by (environment) (max_over_time({SWIMMER_COUNT}[$__range:1h]))"
@@ -256,7 +281,8 @@ validity_without_camera_time = per_pool_bargauge(
     "Swimmer Count', which counts every cause; the gap between the two is camera/LAN downtime. "
     "A camera report counts when it was renewed between one minute before and three minutes after the sample, "
     "because the first probe comes a minute or two after the pool stops; a frozen report is unknown and removes "
-    "nothing. Outages shorter than 45 s are never probed and stay in the number. Pools whose CVS image does not "
+    "nothing. Outages shorter than 45 s are never probed and stay in the number. Validity is read on a 5-minute "
+    "grid, so an outage shorter than 5 minutes can be missed in both directions. Pools whose CVS image does not "
     "push the gauge use the frame-rate rule instead (a camera below 0.5 fps). No bar = the pool was camera/LAN-down "
     "for the whole range. The newest three minutes are not yet attributed. The fleet average is the 'Validity % "
     "(camera/LAN time removed)' line of the daily trend beside this panel; it has no bar here because each "
@@ -302,13 +328,15 @@ validity_by_cause_trend = {
 
 hosts_table = {
     "id": 26, "type": "table", "title": "Hosts: absence, reboots, heat (per server)",
-    "description": "Per server with a pool that passes the dashboard's filters in some hour of the selected range, over that range. 'absent %' = share of the range in which the cloud had no "
-                   "node-exporter sample from the host (5-minute grid, so the nightly monitoring restart and gaps "
-                   "under 5 minutes do not count; internet and power/host outages are not told apart here, and a "
-                   "host silent for the whole range has no row). 'reboots' = times the boot time moved by more than "
-                   "60 seconds. 'max CPU \u00b0C' = hottest CPU sensor reading. 'throttle events' = CPU package "
-                   "thermal-throttle events. 'lowest pool validity %' = the swimmer-count validity of the host's "
-                   "worst selected pool. Sort by temperature or throttling to see whether downtime follows heat.",
+    "description": "Per server with a pool that passes the dashboard's filters in some hour of the selected range, over that range. 'absent %' = share of the 5-minute steps of the range in which "
+                   "the cloud had node-exporter samples from some host but none from this one (so the future part "
+                   "of the range and gaps in the cloud's own data do not count, nor do the nightly monitoring "
+                   "restart and gaps under 5 minutes; internet and power/host outages are not told apart here, and "
+                   "a host silent for the whole range has no row). 'reboots' = times the boot time moved by more "
+                   "than 60 seconds. '% of 5 min with throttling' = share of the range's 5-minute steps with at "
+                   "least one CPU package thermal-throttle event, the CPU's own signal that it is too hot. "
+                   "'lowest pool validity %' = the swimmer-count validity of the host's worst selected pool. Sort "
+                   "by throttling to see whether downtime follows heat.",
     "datasource": DS, "gridPos": grid(0, 13, 24, 11),
     "fieldConfig": {
         "defaults": {"custom": {"filterable": True}, "decimals": 1},
@@ -317,8 +345,7 @@ hosts_table = {
             rename("environment", "server"),
             rename("Value #A", "absent %", {"id": "unit", "value": "percent"}),
             rename("Value #B", "reboots", {"id": "decimals", "value": 0}),
-            rename("Value #C", "max CPU \u00b0C", {"id": "unit", "value": "celsius"}),
-            rename("Value #D", "throttle events", {"id": "decimals", "value": 0}),
+            rename("Value #D", "% of 5 min with throttling", {"id": "unit", "value": "percent"}),
             rename("Value #E", "lowest pool validity %", {"id": "unit", "value": "percent"}),
         ],
     },
@@ -326,17 +353,15 @@ hosts_table = {
     "targets": [
         target("A", f"{HOST_ABSENT} and on(environment) {SELECTED_POOL_HOSTS}", "", format="table", instant=True),
         target("B", f"{HOST_REBOOTS} and on(environment) {SELECTED_POOL_HOSTS}", "", format="table", instant=True),
-        target("C", f"{MAX_CPU_TEMPERATURE} and on(environment) {SELECTED_POOL_HOSTS}", "", format="table",
-               instant=True),
-        target("D", f"sum by (environment) (increase({THROTTLES}[$__range])) and on(environment) {SELECTED_POOL_HOSTS}",
-               "", format="table", instant=True),
+        target("D", f"{cpu_throttling_percent('$__range')} and on(environment) {SELECTED_POOL_HOSTS}", "",
+               format="table", instant=True),
         target("E", f"min by (environment) (avg_over_time({VALID_SAMPLES}[$__range:5m]) * 100)", "",
                format="table", instant=True),
     ],
     "transformations": [
         {"id": "merge", "options": {}},
         {"id": "organize", "options": {"indexByName": {
-            "environment": 0, "Value #A": 1, "Value #B": 2, "Value #C": 3, "Value #D": 4, "Value #E": 5}}},
+            "environment": 0, "Value #A": 1, "Value #B": 2, "Value #D": 3, "Value #E": 4}}},
     ],
 }
 
@@ -345,19 +370,20 @@ LINES_NO_POINTS = {"drawStyle": "line", "fillOpacity": 0, "lineWidth": 1, "showP
 host_heat = {
     "id": 27, "type": "timeseries",
     "title": "Host heat over time: hottest CPU sensor and throttling (per server)",
-    "description": "Hottest CPU sensor of each selected server (left axis) and its CPU package thermal-throttle "
-                   "events per 10 minutes (right axis, bars). Narrow the Server filter and compare with the validity "
-                   "panel beside it.",
+    "description": "Hottest CPU sensor of each selected server (left axis, solid) and the share of the past hour's "
+                   "5-minute steps with at least one CPU package thermal-throttle event (right axis, 0-100 %, "
+                   "dashed). Narrow the Server filter and compare with the validity panel beside it.",
     "datasource": DS, "gridPos": grid(0, 26, 12, 9),
     "fieldConfig": {
         "defaults": {"color": {"mode": "palette-classic"}, "custom": LINES_NO_POINTS, "unit": "celsius"},
         "overrides": [{
             "matcher": {"id": "byFrameRefID", "options": "B"},
             "properties": [
-                {"id": "unit", "value": "short"},
+                {"id": "unit", "value": "percent"},
+                {"id": "min", "value": 0},
+                {"id": "max", "value": 100},
                 {"id": "custom.axisPlacement", "value": "right"},
-                {"id": "custom.drawStyle", "value": "bars"},
-                {"id": "custom.fillOpacity", "value": 40},
+                {"id": "custom.lineStyle", "value": {"fill": "dash", "dash": [10, 10]}},
             ],
         }],
     },
@@ -366,9 +392,8 @@ host_heat = {
     "targets": [
         target("A", f"{CPU_TEMPERATURE} and on(environment) {SELECTED_POOL_HOSTS_DAY}", "{{environment}} \u00b0C",
                range=True),
-        target("B", f"sum by (environment) (increase({THROTTLES}[10m])) and on(environment) {SELECTED_POOL_HOSTS_DAY}",
-               "{{environment}} throttle events",
-               interval="10m", range=True),
+        target("B", f"{cpu_throttling_percent('1h')} and on(environment) {SELECTED_POOL_HOSTS_DAY}",
+               "{{environment}} % throttling", interval="10m", range=True),
     ],
 }
 
@@ -693,6 +718,20 @@ UPTIME_BY_CAUSE_ROW_HEIGHT = 26
 SWIMMER_COUNT_VALIDITY_Y = UPTIME_BY_CAUSE_ROW_HEIGHT + 1
 
 # --- Availability Breakdown: Cameras vs Software --------------------------------------------------------------
+# A camera counts as down by the same rule as in the panels above (POOL_CAMERA_FAULT), so the dashboard has one
+# definition of a camera/LAN fault. A camera that delivers no frames because our software is down is not down.
+
+# 1 for a pool with no camera/LAN fault, 0 for a pool with one.
+POOL_CAMERAS_UP = (
+    f"(((count {BY_POOL} ({SWIMMER_COUNT}) * 0 + 1) unless {ON_POOL} {POOL_CAMERA_FAULT}) "
+    f"or (count {BY_POOL} ({SWIMMER_COUNT}) * 0))"
+)
+CAMERAS_UP_SAMPLES = (
+    f"(({POOL_CAMERAS_UP} and {ON_POOL} (cvs_maintenance_mode == 0)) and {ON_POOL} {SWIMMER_COUNT} "
+    f"and {ON_POOL} {VERSION})"
+)
+VALID_WHILE_CAMERAS_UP = f"(({VALID} and {ON_POOL} ({POOL_CAMERAS_UP} == 1)) and {ON_POOL} {VERSION})"
+
 
 def software_uptime(aggregation, subquery):
     """Valid samples while every camera was up, as a share of the samples in which every camera was up."""
@@ -703,12 +742,14 @@ def software_uptime(aggregation, subquery):
 
 
 camera_availability = per_pool_bargauge(
-    16, "% Camera Availability (per pool, all cameras producing frames, excluding nightly restart)",
-    "Percentage of the selected range during which EVERY camera on the pool reported actual_fps > 0.5 (min over "
-    "cameras of actual_fps, evaluated inline on a 15m grid; any single dead camera counts the whole pool as down, "
-    "because the synchronizer cannot form frame sets without it). Planned maintenance windows "
-    "(cvs_maintenance_mode=1) are excluded. Compare with the validity gauge below: when the two match, the invalid "
-    "time is camera connectivity, not software.",
+    16, "% Camera Availability (per pool, no camera/LAN fault, excluding nightly restart)",
+    "Percentage of the selected range during which no camera of the pool had a camera/LAN fault, by the same rule "
+    "as the panels above: a camera reported 'ping but no video' or 'no ping' (cvs_camera_health_state 1 or 2), or, "
+    "for pools whose CVS image does not push the gauge, a camera below 0.5 fps. Evaluated on a 15m grid; any single "
+    "faulty camera counts the whole pool as down, because the synchronizer cannot form frame sets without it. A "
+    "camera that delivers no frames because our software is down is not a camera fault. Planned maintenance "
+    "windows (cvs_maintenance_mode=1) are excluded. Compare with the validity gauge below: when the two match, the "
+    "invalid time is camera connectivity, not software.",
     grid(0, UPTIME_BY_CAUSE_ROW_HEIGHT + 1, 12, 10),
     f"avg(avg_over_time({CAMERAS_UP_SAMPLES}[$__range:15m]) * 100)",
     f"sort(avg_over_time({CAMERAS_UP_SAMPLES}[$__range:15m]) * 100)",
@@ -719,11 +760,11 @@ camera_availability = per_pool_bargauge(
 
 software_uptime_gauge = per_pool_bargauge(
     17, "% Software Uptime excluding camera issues (per pool)",
-    "Of the time ALL cameras on the pool were delivering frames, the percentage during which the pipeline produced "
-    "a valid swimmer count (validity samples taken only while all cameras were up, divided by the all-cameras-up "
-    "samples, both evaluated inline on a 15m grid). This isolates software / host faults (algo container crashes, "
-    "GPU, stalls) from camera connectivity. Blank or NaN = the cameras were never all up in the selected range, so "
-    "software uptime is undefined for that pool. Planned maintenance windows are excluded.",
+    "Of the time no camera of the pool had a camera/LAN fault (see the camera availability gauge), the percentage "
+    "during which the pipeline produced a valid swimmer count (validity samples taken only while the cameras were "
+    "up, divided by the cameras-up samples, both on a 15m grid). This isolates software / host faults (algo "
+    "container crashes, GPU, stalls) from camera connectivity. Blank or NaN = the cameras were never all up in the "
+    "selected range, so software uptime is undefined for that pool. Planned maintenance windows are excluded.",
     grid(12, UPTIME_BY_CAUSE_ROW_HEIGHT + 1, 12, 10),
     software_uptime("sum", "$__range:15m"),
     f"sort({software_uptime(f'sum {BY_POOL} ', '$__range:15m')})",
@@ -739,9 +780,9 @@ VALIDITY_DAILY = f"avg(avg_over_time({VALID}[1d]) * 100 and on(pool_name, site_n
 availability_trend = {
     "id": 18, "type": "timeseries",
     "title": "Daily Trend: Validity vs Camera Availability vs Software Uptime (overall avg)",
-    "description": "Daily overall averages, side by side: swimmer-count validity (what the dashboard always "
-                   "showed), camera availability (all cameras producing frames), and software uptime measured only "
-                   "while the cameras were up. The gap between validity and camera availability is camera "
+    "description": "Daily overall averages, side by side: swimmer-count validity (share of the day with a valid "
+                   "swimmer count), camera availability (no camera/LAN fault, by the rule of the panels above), and "
+                   "software uptime measured only while the cameras were up. The gap between validity and camera availability is camera "
                    "connectivity; the gap between 100% and software uptime is ours.",
     "datasource": DS, "gridPos": grid(0, UPTIME_BY_CAUSE_ROW_HEIGHT + 11, 24, 8),
     "targets": [
@@ -766,17 +807,24 @@ availability_trend = {
     "options": {"legend": TABLE_LEGEND, "tooltip": MULTI_TOOLTIP},
 }
 
-CAMERA_PRODUCING_FRAMES = (
-    f"((actual_fps{{{POOL}}} > bool 0.5) and {ON_POOL} {SWIMMER_COUNT} and {ON_POOL} {VERSION})"
+ACTUAL_FPS = f"actual_fps{{{POOL}}}"
+# Cameras whose CVS image has no health gauge: below 0.5 fps.
+CAMERA_FAULT_BY_FPS = f"(({ACTUAL_FPS} <= 0.5) unless {ON_CAMERA} {CAMERA_HEALTH})"
+# 1 for a camera with no camera/LAN fault, 0 for one with a fault; one row per camera VideoStream reports.
+CAMERA_UP = (
+    f"((({ACTUAL_FPS} * 0 + 1) unless {ON_CAMERA} ({CAMERA_FAULT_REPORTED} or {CAMERA_FAULT_BY_FPS})) "
+    f"or ({ACTUAL_FPS} * 0))"
 )
+CAMERA_UP_SAMPLES = f"({CAMERA_UP} and {ON_POOL} {SWIMMER_COUNT} and {ON_POOL} {VERSION})"
 cameras_below_99 = {
     "id": 19, "type": "table", "title": "Cameras below 99% availability (per camera)",
-    "description": "Individual cameras whose actual_fps was above 0.5 for less than 99% of the selected range (raw "
-                   "per-camera availability, not maintenance-gated). Use it to find WHICH camera is dragging a pool "
-                   "down in the gauges above.",
+    "description": "Individual cameras without a camera/LAN fault for less than 99% of the selected range, by the "
+                   "rule of the camera availability gauge applied to each camera (raw per-camera availability, not "
+                   "maintenance-gated, 15m grid). Use it to find WHICH camera is dragging a pool down in the gauges "
+                   "above.",
     "datasource": DS, "gridPos": grid(0, UPTIME_BY_CAUSE_ROW_HEIGHT + 19, 24, 8),
     "targets": [target(
-        "A", f"sort(avg_over_time({CAMERA_PRODUCING_FRAMES}[$__range:15m]) * 100) < 99",
+        "A", f"sort(avg_over_time({CAMERA_UP_SAMPLES}[$__range:15m]) * 100) < 99",
         "{{site_name}} / {{pool_name}} / cam {{camera_id}}", format="table", instant=True)],
     "fieldConfig": {
         "defaults": {"custom": {"filterable": True}, "decimals": 1, "unit": "percent",
@@ -784,12 +832,14 @@ cameras_below_99 = {
         "overrides": [
             *[hide(label_name) for label_name in ["Time", "__name__", "job", "name", "group"]],
             rename("environment", "server"),
-            rename("Value", "% time producing frames", {"id": "custom.cellOptions", "value": {"type": "color-background"}}),
+            # The panel's percent unit would otherwise print camera 4 as "4%".
+            rename("camera_id", "camera", {"id": "unit", "value": "none"}),
+            rename("Value", "% time without camera/LAN fault", {"id": "custom.cellOptions", "value": {"type": "color-background"}}),
         ],
     },
     "transformations": [{"id": "organize", "options": {"indexByName": {
         "site_name": 0, "pool_name": 1, "environment": 2, "camera_id": 3, "Value": 4}}}],
-    "options": {"showHeader": True, "sortBy": [{"desc": False, "displayName": "% time producing frames"}]},
+    "options": {"showHeader": True, "sortBy": [{"desc": False, "displayName": "% time without camera/LAN fault"}]},
 }
 
 # --- Swimmer Count Validity -----------------------------------------------------------------------------------
@@ -843,8 +893,8 @@ def service_exceptions_per_pool(service_name):
     """Average exceptions of one algo service per pool, or 0 so the service keeps its bar."""
     exceptions = f'cvs_exc_per_service{{{EXCEPTIONS}, service="{service_name}"}}'
     return (
-        f"(sum by (service) (sum_over_time((increase({exceptions}[1h]) and {ON_POOL} {VERSION})[$__range:1h]) "
-        f"and {ON_POOL} {EXCEPTION_POOLS}) / {POOL_COUNT} "
+        f"(sum by (service) (sum_over_time({exceptions_while_pool_selected(exceptions, '1h')}[$__range:1h])) "
+        f"/ {pool_count('$__range')} "
         f'or label_replace(vector(0), "service", "{service_name}", "", ""))'
     )
 
@@ -857,13 +907,15 @@ algo_exceptions_per_container = {
                    "pools.",
     "datasource": DS, "gridPos": grid(0, SWIMMER_COUNT_VALIDITY_Y + 21, 12, 8),
     "targets": [target("A", " or ".join(service_exceptions_per_pool(service_name) for service_name in ALGO_SERVICES),
-                       "{{service}}", instant=True)],
+                       "{{service}}", format="table", instant=True)],
     "fieldConfig": {
         "defaults": {"color": {"mode": "palette-classic"}, "unit": "short", "links": [ES_ALGO_LINK]},
         "overrides": [{"matcher": {"id": "byName", "options": "Time"}, "properties": [
             {"id": "custom.hideFrom", "value": {"legend": True, "tooltip": True, "viz": True}}]}],
     },
-    "options": {"orientation": "horizontal", "showValue": "always", "barWidth": 0.8, "groupWidth": 0.7},
+    # One bar per service, labelled by the service; without xField the bar chart puts the query time on the axis.
+    "options": {"orientation": "horizontal", "xField": "service", "colorByField": "service", "showValue": "always",
+                "barWidth": 0.8, "groupWidth": 0.7},
 }
 
 algo_exceptions_trend = {
@@ -871,18 +923,14 @@ algo_exceptions_trend = {
         12, "Daily Trend: Avg Exceptions per Pool by Container",
         "Daily overall average of algo container exception counts per pool, grouped by service.",
         grid(12, SWIMMER_COUNT_VALIDITY_Y + 21, 12, 8),
-        f"sum by (service) (increase({ALGO_EXCEPTIONS}[1d]) and {ON_POOL} {EXCEPTION_POOLS} "
-        f"and on(pool_name, site_name) {VERSION}) / {POOL_COUNT}",
+        f"sum by (service) ({exceptions_while_pool_selected(ALGO_EXCEPTIONS, '1d')}) / {pool_count('1d')}",
         "{{service}}", {"mode": "palette-classic"}, "short", ES_ALGO_LINK,
     ),
 }
 
 
 def exception_counts(exceptions):
-    return (
-        f"(round(sum_over_time((increase({exceptions}[1h]) and {ON_POOL} {VERSION})[$__range:1h])) "
-        f"and {ON_POOL} {EXCEPTION_POOLS}) > 0"
-    )
+    return f"round(sum_over_time({exceptions_while_pool_selected(exceptions, '1h')}[$__range:1h])) > 0"
 
 
 algo_exceptions_table = exception_table(
@@ -903,8 +951,7 @@ video_stream_exceptions_trend = daily_trend(
     "Daily overall average of VideoStream exception counts per pool. Tracked separately from algo containers "
     "because volume differs by orders of magnitude.",
     grid(0, SWIMMER_COUNT_VALIDITY_Y + 40, 24, 8),
-    f"sum(increase({VIDEO_STREAM_EXCEPTIONS}[1d]) and {ON_POOL} {EXCEPTION_POOLS} "
-    f"and on(pool_name, site_name) {VERSION}) / {POOL_COUNT}",
+    f"sum({exceptions_while_pool_selected(VIDEO_STREAM_EXCEPTIONS, '1d')}) / {pool_count('1d')}",
     "VideoStream", {"mode": "fixed", "fixedColor": "purple"}, "short", ES_VIDEO_STREAM_LINK, minimum=0,
 )
 
