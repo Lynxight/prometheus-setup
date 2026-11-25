@@ -1075,7 +1075,7 @@
           "id": 18,
           "type": "timeseries",
           "title": "Daily Trend: Validity vs Camera Availability vs Software Uptime (overall avg)",
-          "description": "Daily overall averages, side by side: swimmer-count validity (what the dashboard always showed), camera availability (no camera/LAN fault, by the rule of the panels above), and software uptime measured only while the cameras were up. The gap between validity and camera availability is camera connectivity; the gap between 100% and software uptime is ours.",
+          "description": "Daily overall averages, side by side: swimmer-count validity (share of the day with a valid swimmer count), camera availability (no camera/LAN fault, by the rule of the panels above), and software uptime measured only while the cameras were up. The gap between validity and camera availability is camera connectivity; the gap between 100% and software uptime is ours.",
           "datasource": {
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"

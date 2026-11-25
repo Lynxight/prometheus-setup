@@ -459,8 +459,8 @@ VALIDITY_DAILY = f"avg(avg_over_time({VALID}[1d]) * 100 and on(pool_name, site_n
 availability_trend = {
     "id": 18, "type": "timeseries",
     "title": "Daily Trend: Validity vs Camera Availability vs Software Uptime (overall avg)",
-    "description": "Daily overall averages, side by side: swimmer-count validity (what the dashboard always "
-                   "showed), camera availability (no camera/LAN fault, by the rule of the panels above), and "
+    "description": "Daily overall averages, side by side: swimmer-count validity (share of the day with a valid "
+                   "swimmer count), camera availability (no camera/LAN fault, by the rule of the panels above), and "
                    "software uptime measured only while the cameras were up. The gap between validity and camera availability is camera "
                    "connectivity; the gap between 100% and software uptime is ours.",
     "datasource": DS, "gridPos": grid(0, UPTIME_BY_CAUSE_ROW_HEIGHT + 11, 24, 8),
