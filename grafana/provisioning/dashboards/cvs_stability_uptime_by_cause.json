@@ -317,7 +317,7 @@
       "id": 24,
       "type": "timeseries",
       "title": "Daily Trend: Validity counting every cause vs camera/LAN time removed (overall avg)",
-      "description": "Daily overall averages. 'Validity % (every cause)' is the swimmer-count validity. 'Validity % (camera/LAN time removed)' is the same number once invalid time with a camera/LAN fault is taken out of the day. 'Camera/LAN downtime %' is the share of the day that was taken out.",
+      "description": "Daily overall averages. 'Validity % (every cause)' is the swimmer-count validity. 'Validity % (camera/LAN time removed)' is the same number once invalid time with a camera/LAN fault is taken out of the day. The gap between the two lines is the validity lost to camera/LAN faults.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -373,21 +373,6 @@
                 }
               }
             ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Camera/LAN downtime %"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "orange",
-                  "mode": "fixed"
-                }
-              }
-            ]
           }
         ]
       },
@@ -428,18 +413,6 @@
           "expr": "avg(avg_over_time(((cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} unless on(pool_name, site_name, environment) ((max by (pool_name, site_name, environment) (((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0))) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) and on(pool_name, site_name, environment) (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == 0))) and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[1d:5m]) * 100)",
           "legendFormat": "Validity % (camera/LAN time removed)",
           "refId": "B",
-          "interval": "1d",
-          "range": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "avg(avg_over_time(((((cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} == bool 0) and on(pool_name, site_name, environment) (max by (pool_name, site_name, environment) (((max_over_time(cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[4m] offset -3m) > 0) and on(pool_name, site_name, environment, camera_id) (changes(push_time_seconds{name=\"cvs_camera_health_state\", environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}[6m] offset -3m) > 0))) or ((min by (pool_name, site_name, environment) (actual_fps{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"}) > bool 0.5) == 0) unless on(pool_name, site_name, environment) cvs_camera_health_state{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\"})) or (cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"} * 0)) and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))[1d:5m]) * 100)",
-          "legendFormat": "Camera/LAN downtime %",
-          "refId": "C",
           "interval": "1d",
           "range": true
         }

@@ -228,10 +228,6 @@ POOL_CAMERA_FAULT = f"({POOL_CAMERA_FAULT_REPORTED} or {POOL_CAMERA_FAULT_BY_FPS
 VALID_WITHOUT_CAMERA_TIME = (
     f"(({VALID} unless {ON_POOL} ({POOL_CAMERA_FAULT} and {ON_POOL} ({VALID} == 0))) and {ON_POOL} {VERSION})"
 )
-# 1 for an invalid sample with a camera/LAN fault, 0 for every other validity sample.
-CAMERA_DOWNTIME = (
-    f"(((({VALID} == bool 0) and {ON_POOL} {POOL_CAMERA_FAULT}) or ({VALID} * 0)) and {ON_POOL} {VERSION})"
-)
 
 HOST = 'environment=~"$server", group=~"$deploy_group"'
 BOOT_TIME = f'node_boot_time_seconds{{job="nodeexporter", {HOST}}}'
@@ -298,7 +294,7 @@ validity_by_cause_trend = {
     "title": "Daily Trend: Validity counting every cause vs camera/LAN time removed (overall avg)",
     "description": "Daily overall averages. 'Validity % (every cause)' is the swimmer-count validity. 'Validity % "
                    "(camera/LAN time removed)' is the same number once invalid time with a camera/LAN fault is taken "
-                   "out of the day. 'Camera/LAN downtime %' is the share of the day that was taken out.",
+                   "out of the day. The gap between the two lines is the validity lost to camera/LAN faults.",
     "datasource": DS, "gridPos": grid(12, 1, 12, 12),
     "fieldConfig": {
         "defaults": {
@@ -310,7 +306,6 @@ validity_by_cause_trend = {
         "overrides": [
             fixed_color("Validity % (every cause)", "green"),
             fixed_color("Validity % (camera/LAN time removed)", "blue"),
-            fixed_color("Camera/LAN downtime %", "orange"),
         ],
     },
     "options": {"legend": TABLE_LEGEND, "tooltip": MULTI_TOOLTIP},
@@ -319,8 +314,6 @@ validity_by_cause_trend = {
                interval="1d", range=True),
         target("B", f"avg(avg_over_time({VALID_WITHOUT_CAMERA_TIME}[1d:5m]) * 100)",
                "Validity % (camera/LAN time removed)", interval="1d", range=True),
-        target("C", f"avg(avg_over_time({CAMERA_DOWNTIME}[1d:5m]) * 100)", "Camera/LAN downtime %",
-               interval="1d", range=True),
     ],
 }
 
