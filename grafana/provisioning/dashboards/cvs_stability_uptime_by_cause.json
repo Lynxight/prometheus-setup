@@ -590,7 +590,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "max by (environment) (clamp_min(1 - count_over_time(node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}[$__range:5m]) / scalar(count_over_time(count(node_boot_time_seconds{job=\"nodeexporter\"})[$__range:5m])), 0) * 100) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
+          "expr": "clamp_min(1 - count_over_time((count by (environment) (node_boot_time_seconds{job=\"nodeexporter\", environment=~\"$server\", group=~\"$deploy_group\"}))[$__range:5m]) / scalar(count_over_time(count(node_boot_time_seconds{job=\"nodeexporter\"})[$__range:5m])), 0) * 100 and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
           "legendFormat": "",
           "refId": "A",
           "format": "table",

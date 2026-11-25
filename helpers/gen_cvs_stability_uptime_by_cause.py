@@ -224,11 +224,12 @@ BOOT_TIME = f'node_boot_time_seconds{{job="nodeexporter", {HOST}}}'
 # length of the range: a range that ends in the future, or a gap in the cloud's own data, would otherwise count as
 # absence of every host. The fleet count ignores the dashboard's filters, so a filter that selects only an absent
 # host still has steps to count against. The 5-minute grid keeps the nightly monitoring restart and other gaps
-# under 5 minutes out.
+# under 5 minutes out. A host's presence is counted per host, not per series: when a label of its boot-time series
+# changes, each series covers only part of the range, and taking the worst series would read as near-total absence.
 FLEET_BOOT_TIME = 'node_boot_time_seconds{job="nodeexporter"}'
 HOST_ABSENT = (
-    f"max by (environment) (clamp_min(1 - count_over_time({BOOT_TIME}[$__range:5m]) "
-    f"/ scalar(count_over_time(count({FLEET_BOOT_TIME})[$__range:5m])), 0) * 100)"
+    f"clamp_min(1 - count_over_time((count by (environment) ({BOOT_TIME}))[$__range:5m]) "
+    f"/ scalar(count_over_time(count({FLEET_BOOT_TIME})[$__range:5m])), 0) * 100"
 )
 # The boot time also moves by seconds when the clock is stepped; a reboot moves it by more than 2 minutes.
 HOST_REBOOTS = (
