@@ -246,8 +246,12 @@ HOST_REBOOTS = (
     f"max by (environment) (sum_over_time((({BOOT_TIME} - last_over_time({BOOT_TIME}[1d] offset 5m)) > bool 120)"
     f"[$__range:5m]))"
 )
-CPU_SENSOR_TEMPERATURE = f'node_hwmon_temp_celsius{{job="nodeexporter", chip=~"platform_coretemp_.*", {HOST}}}'
-CPU_TEMPERATURE = f"max by (environment) ({CPU_SENSOR_TEMPERATURE})"
+# temp1 of a coretemp chip is the CPU package sensor: one series per package. The per-core sensors are about
+# twenty times as many, and reading them at every point of a time series times out on the production Prometheus.
+CPU_PACKAGE_TEMPERATURE = (
+    'max by (environment) (node_hwmon_temp_celsius{job="nodeexporter", chip=~"platform_coretemp_.*", '
+    f'sensor="temp1", {HOST}}})'
+)
 THROTTLES = f'node_cpu_package_throttles_total{{job="nodeexporter_lowfreq", {HOST}}}'
 
 
@@ -261,9 +265,16 @@ def cpu_throttling_percent(window):
 # The host panels show the servers that had a pool passing the dashboard's filters in some hour of the range, so a
 # host that went silent before the end of the range keeps its row; joining on the current sample would drop it.
 SELECTED_POOL_HOSTS = f"group by (environment) (max_over_time({SWIMMER_COUNT}[$__range:1h]))"
-# The same for each point of a time series, over the day before it: the set of pools passing the filters changes
-# during the day, and joining on each point's own sample would cut a host's line whenever it shrinks.
-SELECTED_POOL_HOSTS_DAY = f"group by (environment) (max_over_time({SWIMMER_COUNT}[1d:1h]))"
+# For each point of a time series, the servers with a pool passing the filters at that point. A look-back over the
+# day before each point would keep a host's line whole while its pools are out of the filters, but it times out on
+# the production Prometheus.
+SELECTED_POOL_HOSTS_NOW = f"group by (environment) ({SWIMMER_COUNT})"
+# The over-time panels draw a line per server or per pool up to this many selected servers, and fleet lines above
+# it: hundreds of lines cannot be read.
+MAX_SERVER_LINES = 20
+SELECTED_SERVER_COUNT = f"count({SELECTED_POOL_HOSTS_NOW})"
+IF_FEW_SERVERS = f"and on() ({SELECTED_SERVER_COUNT} <= {MAX_SERVER_LINES})"
+IF_MANY_SERVERS = f"and on() ({SELECTED_SERVER_COUNT} > {MAX_SERVER_LINES})"
 
 
 validity_without_camera_time = per_pool_bargauge(
@@ -375,40 +386,53 @@ hosts_table = {
 
 LINES_NO_POINTS = {"drawStyle": "line", "fillOpacity": 0, "lineWidth": 1, "showPoints": "never"}
 
+SERVER_CPU_TEMPERATURE = f"({CPU_PACKAGE_TEMPERATURE} and on(environment) {SELECTED_POOL_HOSTS_NOW})"
+SERVER_THROTTLING_PERCENT = f"({cpu_throttling_percent('1h')} and on(environment) {SELECTED_POOL_HOSTS_NOW})"
+RIGHT_AXIS_PERCENT_DASHED = [
+    {"id": "unit", "value": "percent"},
+    {"id": "min", "value": 0},
+    {"id": "max", "value": 100},
+    {"id": "custom.axisPlacement", "value": "right"},
+    {"id": "custom.lineStyle", "value": {"fill": "dash", "dash": [10, 10]}},
+]
+
 host_heat = {
     "id": 27, "type": "timeseries",
-    "title": "Host heat over time: hottest CPU sensor and throttling (per server)",
-    "description": "Hottest CPU sensor of each selected server (left axis, solid) and the share of the past hour's "
-                   "5-minute steps with at least one CPU package thermal-throttle event (right axis, 0-100 %, "
-                   "dashed). Narrow the Server filter and compare with the validity panel beside it.",
+    "title": "Host heat over time: CPU package temperature and throttling",
+    "description": "CPU package temperature (left axis, solid) and the share of the past hour's 5-minute steps "
+                   "with at least one CPU package thermal-throttle event (right axis, 0-100 %, dashed). With up to "
+                   f"{MAX_SERVER_LINES} selected servers there is a pair of lines per server; with more, the "
+                   "hottest and the median server temperature and the servers' average throttling share. Compare "
+                   "with the validity panel beside it.",
     "datasource": DS, "gridPos": grid(0, 25, 12, 9),
     "fieldConfig": {
         "defaults": {"color": {"mode": "palette-classic"}, "custom": LINES_NO_POINTS, "unit": "celsius"},
-        "overrides": [{
-            "matcher": {"id": "byFrameRefID", "options": "B"},
-            "properties": [
-                {"id": "unit", "value": "percent"},
-                {"id": "min", "value": 0},
-                {"id": "max", "value": 100},
-                {"id": "custom.axisPlacement", "value": "right"},
-                {"id": "custom.lineStyle", "value": {"fill": "dash", "dash": [10, 10]}},
-            ],
-        }],
+        "overrides": [
+            {"matcher": {"id": "byFrameRefID", "options": ref_id}, "properties": RIGHT_AXIS_PERCENT_DASHED}
+            for ref_id in ["B", "E"]
+        ],
     },
     "options": {"legend": {"calcs": ["max"], "displayMode": "table", "placement": "bottom", "showLegend": True},
                 "tooltip": MULTI_TOOLTIP},
     "targets": [
-        target("A", f"{CPU_TEMPERATURE} and on(environment) {SELECTED_POOL_HOSTS_DAY}", "{{environment}} \u00b0C",
+        target("A", f"{SERVER_CPU_TEMPERATURE} {IF_FEW_SERVERS}", "{{environment}} °C", range=True),
+        target("B", f"{SERVER_THROTTLING_PERCENT} {IF_FEW_SERVERS}", "{{environment}} % throttling",
+               interval="1h", range=True),
+        target("C", f"max({SERVER_CPU_TEMPERATURE}) {IF_MANY_SERVERS}", "hottest server °C", range=True),
+        target("D", f"quantile(0.5, {SERVER_CPU_TEMPERATURE}) {IF_MANY_SERVERS}", "median server °C",
                range=True),
-        target("B", f"{cpu_throttling_percent('1h')} and on(environment) {SELECTED_POOL_HOSTS_DAY}",
-               "{{environment}} % throttling", interval="10m", range=True),
+        target("E", f"avg({SERVER_THROTTLING_PERCENT}) {IF_MANY_SERVERS}", "servers' average % throttling",
+               interval="1h", range=True),
     ],
 }
 
+POOL_VALIDITY_15M = f"(avg_over_time({VALID}[15m]) * 100 and {ON_POOL} {VERSION})"
 pool_validity_over_time = {
-    "id": 28, "type": "timeseries", "title": "Pool validity over time (per pool, 15-minute average)",
-    "description": "Swimmer-count validity of each selected pool, averaged over 15 minutes, on the same time axis as "
-                   "the heat panel beside it. A gap = the pool was under maintenance or its host was absent.",
+    "id": 28, "type": "timeseries", "title": "Pool validity over time (15-minute average)",
+    "description": "Swimmer-count validity averaged over 15 minutes, on the same time axis as the heat panel "
+                   f"beside it. With up to {MAX_SERVER_LINES} selected servers there is a line per pool, and a gap "
+                   "= the pool was under maintenance or its host was absent; with more, one line: the average "
+                   "over the selected pools.",
     "datasource": DS, "gridPos": grid(12, 25, 12, 9),
     "fieldConfig": {
         "defaults": {"color": {"mode": "palette-classic"}, "custom": LINES_NO_POINTS, "unit": "percent",
@@ -417,8 +441,12 @@ pool_validity_over_time = {
     },
     "options": {"legend": {"calcs": ["mean"], "displayMode": "table", "placement": "bottom", "showLegend": True},
                 "tooltip": {"mode": "multi", "sort": "asc"}},
-    "targets": [target("A", f"avg_over_time({VALID}[15m]) * 100 and {ON_POOL} {VERSION}",
-                       "{{site_name}} / {{pool_name}}", interval="15m", range=True)],
+    "targets": [
+        target("A", f"{POOL_VALIDITY_15M} {IF_FEW_SERVERS}", "{{site_name}} / {{pool_name}}", interval="15m",
+               range=True),
+        target("B", f"avg({POOL_VALIDITY_15M}) {IF_MANY_SERVERS}", "selected pools (average)", interval="15m",
+               range=True),
+    ],
 }
 
 UPTIME_BY_CAUSE_ROW_HEIGHT = 25
