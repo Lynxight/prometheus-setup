@@ -35,10 +35,6 @@ def pool_count(window):
     return f"scalar(count(count {BY_POOL} (max_over_time({SWIMMER_COUNT}[{window}:1h]))))"
 
 
-# Every camera of the pool above 0.5 fps: VideoStream's frame rate as a stand-in for camera health, used only for
-# pools whose CVS image does not push cvs_camera_health_state.
-CAMERAS_UP_FPS = f"(min {BY_POOL} (actual_fps{{{POOL}}}) > bool 0.5)"
-
 EXCEPTIONS = (
     f'{POOL}, group=~"$deploy_group", under_maintenance=~"$under_maintenance", '
     'exception_name!~"NoneType|KeyboardInterrupt"'
@@ -220,17 +216,16 @@ CAMERA_FAULT_REPORTED = (
     f"((max_over_time({CAMERA_HEALTH}[4m] offset -3m) > 0) "
     f"and {ON_CAMERA} (changes({CAMERA_HEALTH_PUSH_TIME}[6m] offset -3m) > 0))"
 )
-POOL_CAMERA_FAULT_REPORTED = f"max {BY_POOL} ({CAMERA_FAULT_REPORTED})"
-# Pools whose CVS image has no camera health gauge: a camera below 0.5 fps.
-POOL_CAMERA_FAULT_BY_FPS = f"({CAMERAS_UP_FPS} == 0) unless {ON_POOL} {CAMERA_HEALTH}"
-POOL_CAMERA_FAULT = f"({POOL_CAMERA_FAULT_REPORTED} or {POOL_CAMERA_FAULT_BY_FPS})"
-# The validity samples that remain once the invalid ones with a camera/LAN fault are taken out.
+POOL_CAMERA_FAULT = f"max {BY_POOL} ({CAMERA_FAULT_REPORTED})"
+# A pool whose CVS reports the camera health gauge. Camera/LAN faults are measured only for these pools, and the
+# camera/LAN panels leave the others out. Frame rate is not used in the gauge's place: it says that frames
+# stopped, not whether the camera or our software stopped them.
+POOL_REPORTS_CAMERA_HEALTH = f"group {BY_POOL} ({CAMERA_HEALTH})"
+# The validity samples of the pools that report camera health, once the invalid ones with a camera/LAN fault are
+# taken out.
 VALID_WITHOUT_CAMERA_TIME = (
-    f"(({VALID} unless {ON_POOL} ({POOL_CAMERA_FAULT} and {ON_POOL} ({VALID} == 0))) and {ON_POOL} {VERSION})"
-)
-# 1 for an invalid sample with a camera/LAN fault, 0 for every other validity sample.
-CAMERA_DOWNTIME = (
-    f"(((({VALID} == bool 0) and {ON_POOL} {POOL_CAMERA_FAULT}) or ({VALID} * 0)) and {ON_POOL} {VERSION})"
+    f"((({VALID} unless {ON_POOL} ({POOL_CAMERA_FAULT} and {ON_POOL} ({VALID} == 0))) "
+    f"and {ON_POOL} {POOL_REPORTS_CAMERA_HEALTH}) and {ON_POOL} {VERSION})"
 )
 
 HOST = 'environment=~"$server", group=~"$deploy_group"'
@@ -280,9 +275,10 @@ validity_without_camera_time = per_pool_bargauge(
     "A camera report counts when it was renewed between one minute before and three minutes after the sample, "
     "because the first probe comes a minute or two after the pool stops; a frozen report is unknown and removes "
     "nothing. Outages shorter than 45 s are never probed and stay in the number. Validity is read on a 5-minute "
-    "grid, so an outage shorter than 5 minutes can be missed in both directions. Pools whose CVS image does not "
-    "push the gauge use the frame-rate rule instead (a camera below 0.5 fps). No bar = the pool was camera/LAN-down "
-    "for the whole range. The newest three minutes are not yet attributed. The fleet average is the 'Validity % "
+    "grid, so an outage shorter than 5 minutes can be missed in both directions. A pool whose CVS does not "
+    "report cvs_camera_health_state is not measured and has no bar; a pool that started reporting it during the "
+    "range is measured from then on. A measured pool with no bar was camera/LAN-down for all of its measured "
+    "time. The newest three minutes are not yet attributed. The fleet average is the 'Validity % "
     "(camera/LAN time removed)' line of the daily trend beside this panel; it has no bar here because each "
     "query of this expression is slow on the production Prometheus.",
     grid(0, 1, 12, 12),
@@ -293,13 +289,30 @@ validity_without_camera_time = per_pool_bargauge(
     BAR_SIZES,
 )
 
+camera_health_coverage = {
+    "id": 34, "type": "stat", "title": "Pools reporting camera health",
+    "description": "Of the pools that pass the dashboard's filters now, how many report cvs_camera_health_state. "
+                   "The camera/LAN panels of this dashboard cover only these pools; the others are not measured.",
+    "datasource": DS, "gridPos": grid(12, 1, 12, 3),
+    "fieldConfig": {"defaults": {"unit": "none", "decimals": 0}, "overrides": []},
+    "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": False}, "colorMode": "none",
+                "graphMode": "none", "textMode": "value_and_name", "orientation": "vertical"},
+    "targets": [
+        target("A", f"count({POOL_REPORTS_CAMERA_HEALTH} and {ON_POOL} {SWIMMER_COUNT}) or vector(0)",
+               "report camera health", instant=True),
+        target("B", f"count(count {BY_POOL} ({SWIMMER_COUNT}))", "selected pools", instant=True),
+    ],
+}
+
 validity_by_cause_trend = {
     "id": 24, "type": "timeseries",
     "title": "Daily Trend: Validity counting every cause vs camera/LAN time removed (overall avg)",
     "description": "Daily overall averages. 'Validity % (every cause)' is the swimmer-count validity. 'Validity % "
                    "(camera/LAN time removed)' is the same number once invalid time with a camera/LAN fault is taken "
-                   "out of the day. 'Camera/LAN downtime %' is the share of the day that was taken out.",
-    "datasource": DS, "gridPos": grid(12, 1, 12, 12),
+                   "out of the day, averaged over the pools that report camera health (the count above this "
+                   "panel); the every-cause line averages every selected pool. While both cover the same pools, "
+                   "the gap between the two lines is the validity lost to camera/LAN faults.",
+    "datasource": DS, "gridPos": grid(12, 4, 12, 9),
     "fieldConfig": {
         "defaults": {
             "color": {"mode": "palette-classic"},
@@ -310,7 +323,6 @@ validity_by_cause_trend = {
         "overrides": [
             fixed_color("Validity % (every cause)", "green"),
             fixed_color("Validity % (camera/LAN time removed)", "blue"),
-            fixed_color("Camera/LAN downtime %", "orange"),
         ],
     },
     "options": {"legend": TABLE_LEGEND, "tooltip": MULTI_TOOLTIP},
@@ -319,8 +331,6 @@ validity_by_cause_trend = {
                interval="1d", range=True),
         target("B", f"avg(avg_over_time({VALID_WITHOUT_CAMERA_TIME}[1d:5m]) * 100)",
                "Validity % (camera/LAN time removed)", interval="1d", range=True),
-        target("C", f"avg(avg_over_time({CAMERA_DOWNTIME}[1d:5m]) * 100)", "Camera/LAN downtime %",
-               interval="1d", range=True),
     ],
 }
 
@@ -419,10 +429,10 @@ SWIMMER_COUNT_VALIDITY_Y = UPTIME_BY_CAUSE_ROW_HEIGHT + 1
 # A camera counts as down by the same rule as in the panels above (POOL_CAMERA_FAULT), so the dashboard has one
 # definition of a camera/LAN fault. A camera that delivers no frames because our software is down is not down.
 
-# 1 for a pool with no camera/LAN fault, 0 for a pool with one.
+# 1 for a pool with no camera/LAN fault, 0 for a pool with one; only pools that report camera health.
 POOL_CAMERAS_UP = (
-    f"(((count {BY_POOL} ({SWIMMER_COUNT}) * 0 + 1) unless {ON_POOL} {POOL_CAMERA_FAULT}) "
-    f"or (count {BY_POOL} ({SWIMMER_COUNT}) * 0))"
+    f"((((count {BY_POOL} ({SWIMMER_COUNT}) * 0 + 1) unless {ON_POOL} {POOL_CAMERA_FAULT}) "
+    f"or (count {BY_POOL} ({SWIMMER_COUNT}) * 0)) and {ON_POOL} {POOL_REPORTS_CAMERA_HEALTH})"
 )
 CAMERAS_UP_SAMPLES = (
     f"(({POOL_CAMERAS_UP} and {ON_POOL} (cvs_maintenance_mode == 0)) and {ON_POOL} {SWIMMER_COUNT} "
@@ -442,8 +452,8 @@ def software_uptime(aggregation, subquery):
 camera_availability = per_pool_bargauge(
     16, "% Camera Availability (per pool, no camera/LAN fault, excluding nightly restart)",
     "Percentage of the selected range during which no camera of the pool had a camera/LAN fault, by the same rule "
-    "as the panels above: a camera reported 'ping but no video' or 'no ping' (cvs_camera_health_state 1 or 2), or, "
-    "for pools whose CVS image does not push the gauge, a camera below 0.5 fps. Evaluated on a 15m grid; any single "
+    "as the panels above: a camera reported 'ping but no video' or 'no ping' (cvs_camera_health_state 1 or 2). "
+    "Only pools that report cvs_camera_health_state are shown. Evaluated on a 15m grid; any single "
     "faulty camera counts the whole pool as down, because the synchronizer cannot form frame sets without it. A "
     "camera that delivers no frames because our software is down is not a camera fault. Planned maintenance "
     "windows (cvs_maintenance_mode=1) are excluded. Compare with the validity gauge below: when the two match, the "
@@ -462,7 +472,8 @@ software_uptime_gauge = per_pool_bargauge(
     "during which the pipeline produced a valid swimmer count (validity samples taken only while the cameras were "
     "up, divided by the cameras-up samples, both on a 15m grid). This isolates software / host faults (algo "
     "container crashes, GPU, stalls) from camera connectivity. Blank or NaN = the cameras were never all up in the "
-    "selected range, so software uptime is undefined for that pool. Planned maintenance windows are excluded.",
+    "selected range, so software uptime is undefined for that pool. Only pools that report "
+    "cvs_camera_health_state are shown. Planned maintenance windows are excluded.",
     grid(12, UPTIME_BY_CAUSE_ROW_HEIGHT + 1, 12, 10),
     software_uptime("sum", "$__range:15m"),
     f"sort({software_uptime(f'sum {BY_POOL} ', '$__range:15m')})",
@@ -480,8 +491,9 @@ availability_trend = {
     "title": "Daily Trend: Validity vs Camera Availability vs Software Uptime (overall avg)",
     "description": "Daily overall averages, side by side: swimmer-count validity (share of the day with a valid "
                    "swimmer count), camera availability (no camera/LAN fault, by the rule of the panels above), and "
-                   "software uptime measured only while the cameras were up. The gap between validity and camera availability is camera "
-                   "connectivity; the gap between 100% and software uptime is ours.",
+                   "software uptime measured only while the cameras were up. Camera availability and software uptime "
+                   "average only the pools that report cvs_camera_health_state; validity averages every selected "
+                   "pool. The gap between 100% and software uptime is ours.",
     "datasource": DS, "gridPos": grid(0, UPTIME_BY_CAUSE_ROW_HEIGHT + 11, 24, 8),
     "targets": [
         target("A", VALIDITY_DAILY, "Validity %", interval="1d", range=True),
@@ -505,20 +517,16 @@ availability_trend = {
     "options": {"legend": TABLE_LEGEND, "tooltip": MULTI_TOOLTIP},
 }
 
-ACTUAL_FPS = f"actual_fps{{{POOL}}}"
-# Cameras whose CVS image has no health gauge: below 0.5 fps.
-CAMERA_FAULT_BY_FPS = f"(({ACTUAL_FPS} <= 0.5) unless {ON_CAMERA} {CAMERA_HEALTH})"
-# 1 for a camera with no camera/LAN fault, 0 for one with a fault; one row per camera VideoStream reports.
+# 1 for a camera with no camera/LAN fault, 0 for one with a fault; one row per camera that reports camera health.
 CAMERA_UP = (
-    f"((({ACTUAL_FPS} * 0 + 1) unless {ON_CAMERA} ({CAMERA_FAULT_REPORTED} or {CAMERA_FAULT_BY_FPS})) "
-    f"or ({ACTUAL_FPS} * 0))"
+    f"((({CAMERA_HEALTH} * 0 + 1) unless {ON_CAMERA} {CAMERA_FAULT_REPORTED}) or ({CAMERA_HEALTH} * 0))"
 )
 CAMERA_UP_SAMPLES = f"({CAMERA_UP} and {ON_POOL} {SWIMMER_COUNT} and {ON_POOL} {VERSION})"
 cameras_below_99 = {
     "id": 19, "type": "table", "title": "Cameras below 99% availability (per camera)",
     "description": "Individual cameras without a camera/LAN fault for less than 99% of the selected range, by the "
-                   "rule of the camera availability gauge applied to each camera (raw per-camera availability, not "
-                   "maintenance-gated, 15m grid). Use it to find WHICH camera is dragging a pool down in the gauges "
+                   "rule of the camera availability gauge applied to each camera that reports "
+                   "cvs_camera_health_state (raw per-camera availability, not maintenance-gated, 15m grid). Use it to find WHICH camera is dragging a pool down in the gauges "
                    "above.",
     "datasource": DS, "gridPos": grid(0, UPTIME_BY_CAUSE_ROW_HEIGHT + 19, 24, 8),
     "targets": [target(
@@ -663,7 +671,7 @@ video_stream_exceptions_table = exception_table(
 
 PANELS = [
     row(22, "Uptime by cause: camera/LAN, host absence, heat", 0),
-    validity_without_camera_time, validity_by_cause_trend, hosts_table,
+    validity_without_camera_time, camera_health_coverage, validity_by_cause_trend, hosts_table,
     row(29, "Heat and pool validity over time", 24, [host_heat, pool_validity_over_time]),
     row(20, "Availability Breakdown: Cameras vs Software", UPTIME_BY_CAUSE_ROW_HEIGHT + 0,
         [camera_availability, software_uptime_gauge, availability_trend, cameras_below_99]),
