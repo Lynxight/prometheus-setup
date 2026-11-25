@@ -684,8 +684,8 @@
         {
           "id": 27,
           "type": "timeseries",
-          "title": "Host heat over time: hottest CPU sensor and throttling (per server)",
-          "description": "Hottest CPU sensor of each selected server (left axis, solid) and the share of the past hour's 5-minute steps with at least one CPU package thermal-throttle event (right axis, 0-100 %, dashed). Narrow the Server filter and compare with the validity panel beside it.",
+          "title": "Host heat over time: CPU package temperature and throttling",
+          "description": "CPU package temperature (left axis, solid) and the share of the past hour's 5-minute steps with at least one CPU package thermal-throttle event (right axis, 0-100 %, dashed). With up to 20 selected servers there is a pair of lines per server; with more, the hottest and the median server temperature and the servers' average throttling share. Compare with the validity panel beside it.",
           "datasource": {
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
@@ -743,6 +743,40 @@
                     }
                   }
                 ]
+              },
+              {
+                "matcher": {
+                  "id": "byFrameRefID",
+                  "options": "E"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "percent"
+                  },
+                  {
+                    "id": "min",
+                    "value": 0
+                  },
+                  {
+                    "id": "max",
+                    "value": 100
+                  },
+                  {
+                    "id": "custom.axisPlacement",
+                    "value": "right"
+                  },
+                  {
+                    "id": "custom.lineStyle",
+                    "value": {
+                      "fill": "dash",
+                      "dash": [
+                        10,
+                        10
+                      ]
+                    }
+                  }
+                ]
               }
             ]
           },
@@ -767,7 +801,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "max by (environment) (node_hwmon_temp_celsius{job=\"nodeexporter\", chip=~\"platform_coretemp_.*\", environment=~\"$server\", group=~\"$deploy_group\"}) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[1d:1h]))",
+              "expr": "(max by (environment) (node_hwmon_temp_celsius{job=\"nodeexporter\", chip=~\"platform_coretemp_.*\", sensor=\"temp1\", environment=~\"$server\", group=~\"$deploy_group\"}) and on(environment) group by (environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"})) and on() (count(group by (environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"})) <= 20)",
               "legendFormat": "{{environment}} \u00b0C",
               "refId": "A",
               "range": true
@@ -778,10 +812,44 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "avg_over_time((sum by (environment) (increase(node_cpu_package_throttles_total{job=\"nodeexporter_lowfreq\", environment=~\"$server\", group=~\"$deploy_group\"}[5m])) > bool 0)[1h:5m]) * 100 and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[1d:1h]))",
+              "expr": "(avg_over_time((sum by (environment) (increase(node_cpu_package_throttles_total{job=\"nodeexporter_lowfreq\", environment=~\"$server\", group=~\"$deploy_group\"}[5m])) > bool 0)[1h:5m]) * 100 and on(environment) group by (environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"})) and on() (count(group by (environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"})) <= 20)",
               "legendFormat": "{{environment}} % throttling",
               "refId": "B",
-              "interval": "10m",
+              "interval": "1h",
+              "range": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "max((max by (environment) (node_hwmon_temp_celsius{job=\"nodeexporter\", chip=~\"platform_coretemp_.*\", sensor=\"temp1\", environment=~\"$server\", group=~\"$deploy_group\"}) and on(environment) group by (environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))) and on() (count(group by (environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"})) > 20)",
+              "legendFormat": "hottest server \u00b0C",
+              "refId": "C",
+              "range": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "quantile(0.5, (max by (environment) (node_hwmon_temp_celsius{job=\"nodeexporter\", chip=~\"platform_coretemp_.*\", sensor=\"temp1\", environment=~\"$server\", group=~\"$deploy_group\"}) and on(environment) group by (environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))) and on() (count(group by (environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"})) > 20)",
+              "legendFormat": "median server \u00b0C",
+              "refId": "D",
+              "range": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "avg((avg_over_time((sum by (environment) (increase(node_cpu_package_throttles_total{job=\"nodeexporter_lowfreq\", environment=~\"$server\", group=~\"$deploy_group\"}[5m])) > bool 0)[1h:5m]) * 100 and on(environment) group by (environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}))) and on() (count(group by (environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"})) > 20)",
+              "legendFormat": "servers' average % throttling",
+              "refId": "E",
+              "interval": "1h",
               "range": true
             }
           ]
@@ -789,8 +857,8 @@
         {
           "id": 28,
           "type": "timeseries",
-          "title": "Pool validity over time (per pool, 15-minute average)",
-          "description": "Swimmer-count validity of each selected pool, averaged over 15 minutes, on the same time axis as the heat panel beside it. A gap = the pool was under maintenance or its host was absent.",
+          "title": "Pool validity over time (15-minute average)",
+          "description": "Swimmer-count validity averaged over 15 minutes, on the same time axis as the heat panel beside it. With up to 20 selected servers there is a line per pool, and a gap = the pool was under maintenance or its host was absent; with more, one line: the average over the selected pools.",
           "datasource": {
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
@@ -839,9 +907,21 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[15m]) * 100 and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0)",
+              "expr": "(avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[15m]) * 100 and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0)) and on() (count(group by (environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"})) <= 20)",
               "legendFormat": "{{site_name}} / {{pool_name}}",
               "refId": "A",
+              "interval": "15m",
+              "range": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "avg((avg_over_time(cvs:swimmer_valid:bool{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[15m]) * 100 and on(pool_name, site_name, environment) (docker_version_tag == $cvs_version or docker_version_tag * (1 - ($cvs_version > bool 0)) > 0))) and on() (count(group by (environment) (swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"})) > 20)",
+              "legendFormat": "selected pools (average)",
+              "refId": "B",
               "interval": "15m",
               "range": true
             }
