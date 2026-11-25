@@ -449,7 +449,7 @@
       "id": 26,
       "type": "table",
       "title": "Hosts: absence, reboots, heat (per server)",
-      "description": "Per server with a pool that passes the dashboard's filters in some hour of the selected range, over that range. 'absent %' = share of the 5-minute steps of the range in which the cloud had node-exporter samples from some host but none from this one (so the future part of the range and gaps in the cloud's own data do not count, nor do the nightly monitoring restart and gaps under 5 minutes; internet and power/host outages are not told apart here, and a host silent for the whole range has no row). 'reboots' = times the boot time moved by more than 2 minutes. '% time at CPU limit' = share of the range in which a CPU sensor was at or above its chip's critical temperature (the sensor's own alarm flag; blank = the host does not report it). '% time throttling' = share of the range in which the CPU package was thermal-throttled. Both are read on a 5-minute grid. 'lowest pool validity %' = the swimmer-count validity of the host's worst selected pool. Sort by heat or throttling to see whether downtime follows heat.",
+      "description": "Per server with a pool that passes the dashboard's filters in some hour of the selected range, over that range. 'absent %' = share of the 5-minute steps of the range in which the cloud had node-exporter samples from some host but none from this one (so the future part of the range and gaps in the cloud's own data do not count, nor do the nightly monitoring restart and gaps under 5 minutes; internet and power/host outages are not told apart here, and a host silent for the whole range has no row). 'reboots' = times the boot time moved by more than 2 minutes. '% of 5 min with throttling' = share of the range's 5-minute steps with at least one CPU package thermal-throttle event, the CPU's own signal that it is too hot. 'lowest pool validity %' = the swimmer-count validity of the host's worst selected pool. Sort by throttling to see whether downtime follows heat.",
       "datasource": {
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
@@ -527,28 +527,12 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Value #C"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "% time at CPU limit"
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
               "options": "Value #D"
             },
             "properties": [
               {
                 "id": "displayName",
-                "value": "% time throttling"
+                "value": "% of 5 min with throttling"
               },
               {
                 "id": "unit",
@@ -614,18 +598,6 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "avg_over_time((max by (environment) (node_hwmon_temp_crit_alarm_celsius{job=\"nodeexporter\", chip=~\"platform_coretemp_.*\", environment=~\"$server\", group=~\"$deploy_group\"}))[$__range:5m]) * 100 and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
-          "legendFormat": "",
-          "refId": "C",
-          "format": "table",
-          "instant": true
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
           "expr": "avg_over_time((sum by (environment) (increase(node_cpu_package_throttles_total{job=\"nodeexporter_lowfreq\", environment=~\"$server\", group=~\"$deploy_group\"}[5m])) > bool 0)[$__range:5m]) * 100 and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
           "legendFormat": "",
           "refId": "D",
@@ -657,9 +629,8 @@
               "environment": 0,
               "Value #A": 1,
               "Value #B": 2,
-              "Value #C": 3,
-              "Value #D": 4,
-              "Value #E": 5
+              "Value #D": 3,
+              "Value #E": 4
             }
           }
         }
@@ -681,7 +652,7 @@
           "id": 27,
           "type": "timeseries",
           "title": "Host heat over time: hottest CPU sensor and throttling (per server)",
-          "description": "Hottest CPU sensor of each selected server (left axis) and its CPU package thermal-throttle events per 10 minutes (right axis, bars). Narrow the Server filter and compare with the validity panel beside it.",
+          "description": "Hottest CPU sensor of each selected server (left axis, solid) and the share of the past hour's 5-minute steps with at least one CPU package thermal-throttle event (right axis, 0-100 %, dashed). Narrow the Server filter and compare with the validity panel beside it.",
           "datasource": {
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
@@ -714,19 +685,29 @@
                 "properties": [
                   {
                     "id": "unit",
-                    "value": "short"
+                    "value": "percent"
+                  },
+                  {
+                    "id": "min",
+                    "value": 0
+                  },
+                  {
+                    "id": "max",
+                    "value": 100
                   },
                   {
                     "id": "custom.axisPlacement",
                     "value": "right"
                   },
                   {
-                    "id": "custom.drawStyle",
-                    "value": "bars"
-                  },
-                  {
-                    "id": "custom.fillOpacity",
-                    "value": 40
+                    "id": "custom.lineStyle",
+                    "value": {
+                      "fill": "dash",
+                      "dash": [
+                        10,
+                        10
+                      ]
+                    }
                   }
                 ]
               }
@@ -764,8 +745,8 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "sum by (environment) (increase(node_cpu_package_throttles_total{job=\"nodeexporter_lowfreq\", environment=~\"$server\", group=~\"$deploy_group\"}[10m])) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[1d:1h]))",
-              "legendFormat": "{{environment}} throttle events",
+              "expr": "avg_over_time((sum by (environment) (increase(node_cpu_package_throttles_total{job=\"nodeexporter_lowfreq\", environment=~\"$server\", group=~\"$deploy_group\"}[5m])) > bool 0)[1h:5m]) * 100 and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[1d:1h]))",
+              "legendFormat": "{{environment}} % throttling",
               "refId": "B",
               "interval": "10m",
               "range": true
@@ -1327,6 +1308,22 @@
                   {
                     "id": "displayName",
                     "value": "server"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "camera_id"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "camera"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "none"
                   }
                 ]
               },

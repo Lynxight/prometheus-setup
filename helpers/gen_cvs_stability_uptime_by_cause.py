@@ -238,17 +238,16 @@ HOST_REBOOTS = (
 )
 CPU_SENSOR_TEMPERATURE = f'node_hwmon_temp_celsius{{job="nodeexporter", chip=~"platform_coretemp_.*", {HOST}}}'
 CPU_TEMPERATURE = f"max by (environment) ({CPU_SENSOR_TEMPERATURE})"
-# Each CPU sensor's own over-limit flag (1 at or above the chip's critical temperature). A share of time at the limit
-# separates a host that runs hot from a busy one: the hottest reading of a week reaches the limit on any busy host,
-# and limits differ between chips.
-CPU_CRIT_ALARM = f'node_hwmon_temp_crit_alarm_celsius{{job="nodeexporter", chip=~"platform_coretemp_.*", {HOST}}}'
-CPU_AT_LIMIT_PERCENT = f"avg_over_time((max by (environment) ({CPU_CRIT_ALARM}))[$__range:5m]) * 100"
 THROTTLES = f'node_cpu_package_throttles_total{{job="nodeexporter_lowfreq", {HOST}}}'
-# The share of 5-minute steps in which the package throttle counter rose. A count of throttle events runs into the
-# millions on a hot host and cannot be compared between hosts.
-CPU_THROTTLING_PERCENT = (
-    f"avg_over_time((sum by (environment) (increase({THROTTLES}[5m])) > bool 0)[$__range:5m]) * 100"
-)
+
+
+def cpu_throttling_percent(window):
+    """Share of the 5-minute steps in `window` with at least one CPU package thermal-throttle event. Throttling is
+    the CPU's own judgement that it is too hot, made at each chip's own limit, so it separates a host that runs hot
+    from a busy one; the hottest reading of a week reaches the limit on any busy host, and the sensors' critical
+    alarm stays off because throttling holds the temperature below it. A count of events runs into the millions on
+    a hot host and cannot be compared between hosts."""
+    return f"avg_over_time((sum by (environment) (increase({THROTTLES}[5m])) > bool 0)[{window}:5m]) * 100"
 # The host panels show the servers that had a pool passing the dashboard's filters in some hour of the range, so a
 # host that went silent before the end of the range keeps its row; joining on the current sample would drop it.
 SELECTED_POOL_HOSTS = f"group by (environment) (max_over_time({SWIMMER_COUNT}[$__range:1h]))"
@@ -317,12 +316,10 @@ hosts_table = {
                    "of the range and gaps in the cloud's own data do not count, nor do the nightly monitoring "
                    "restart and gaps under 5 minutes; internet and power/host outages are not told apart here, and "
                    "a host silent for the whole range has no row). 'reboots' = times the boot time moved by more "
-                   "than 2 minutes. '% time at CPU limit' = share of the range in which a CPU sensor was at or "
-                   "above its chip's critical temperature (the sensor's own alarm flag; blank = the host does not "
-                   "report it). '% time throttling' = share of the range in which the CPU package was "
-                   "thermal-throttled. Both are read on a 5-minute grid. 'lowest pool validity %' = the "
-                   "swimmer-count validity of the host's worst selected pool. Sort by heat or throttling to see "
-                   "whether downtime follows heat.",
+                   "than 2 minutes. '% of 5 min with throttling' = share of the range's 5-minute steps with at "
+                   "least one CPU package thermal-throttle event, the CPU's own signal that it is too hot. "
+                   "'lowest pool validity %' = the swimmer-count validity of the host's worst selected pool. Sort "
+                   "by throttling to see whether downtime follows heat.",
     "datasource": DS, "gridPos": grid(0, 13, 24, 11),
     "fieldConfig": {
         "defaults": {"custom": {"filterable": True}, "decimals": 1},
@@ -331,8 +328,7 @@ hosts_table = {
             rename("environment", "server"),
             rename("Value #A", "absent %", {"id": "unit", "value": "percent"}),
             rename("Value #B", "reboots", {"id": "decimals", "value": 0}),
-            rename("Value #C", "% time at CPU limit", {"id": "unit", "value": "percent"}),
-            rename("Value #D", "% time throttling", {"id": "unit", "value": "percent"}),
+            rename("Value #D", "% of 5 min with throttling", {"id": "unit", "value": "percent"}),
             rename("Value #E", "lowest pool validity %", {"id": "unit", "value": "percent"}),
         ],
     },
@@ -340,17 +336,15 @@ hosts_table = {
     "targets": [
         target("A", f"{HOST_ABSENT} and on(environment) {SELECTED_POOL_HOSTS}", "", format="table", instant=True),
         target("B", f"{HOST_REBOOTS} and on(environment) {SELECTED_POOL_HOSTS}", "", format="table", instant=True),
-        target("C", f"{CPU_AT_LIMIT_PERCENT} and on(environment) {SELECTED_POOL_HOSTS}", "", format="table",
-               instant=True),
-        target("D", f"{CPU_THROTTLING_PERCENT} and on(environment) {SELECTED_POOL_HOSTS}", "", format="table",
-               instant=True),
+        target("D", f"{cpu_throttling_percent('$__range')} and on(environment) {SELECTED_POOL_HOSTS}", "",
+               format="table", instant=True),
         target("E", f"min by (environment) (avg_over_time({VALID_SAMPLES}[$__range:5m]) * 100)", "",
                format="table", instant=True),
     ],
     "transformations": [
         {"id": "merge", "options": {}},
         {"id": "organize", "options": {"indexByName": {
-            "environment": 0, "Value #A": 1, "Value #B": 2, "Value #C": 3, "Value #D": 4, "Value #E": 5}}},
+            "environment": 0, "Value #A": 1, "Value #B": 2, "Value #D": 3, "Value #E": 4}}},
     ],
 }
 
@@ -359,19 +353,20 @@ LINES_NO_POINTS = {"drawStyle": "line", "fillOpacity": 0, "lineWidth": 1, "showP
 host_heat = {
     "id": 27, "type": "timeseries",
     "title": "Host heat over time: hottest CPU sensor and throttling (per server)",
-    "description": "Hottest CPU sensor of each selected server (left axis) and its CPU package thermal-throttle "
-                   "events per 10 minutes (right axis, bars). Narrow the Server filter and compare with the validity "
-                   "panel beside it.",
+    "description": "Hottest CPU sensor of each selected server (left axis, solid) and the share of the past hour's "
+                   "5-minute steps with at least one CPU package thermal-throttle event (right axis, 0-100 %, "
+                   "dashed). Narrow the Server filter and compare with the validity panel beside it.",
     "datasource": DS, "gridPos": grid(0, 25, 12, 9),
     "fieldConfig": {
         "defaults": {"color": {"mode": "palette-classic"}, "custom": LINES_NO_POINTS, "unit": "celsius"},
         "overrides": [{
             "matcher": {"id": "byFrameRefID", "options": "B"},
             "properties": [
-                {"id": "unit", "value": "short"},
+                {"id": "unit", "value": "percent"},
+                {"id": "min", "value": 0},
+                {"id": "max", "value": 100},
                 {"id": "custom.axisPlacement", "value": "right"},
-                {"id": "custom.drawStyle", "value": "bars"},
-                {"id": "custom.fillOpacity", "value": 40},
+                {"id": "custom.lineStyle", "value": {"fill": "dash", "dash": [10, 10]}},
             ],
         }],
     },
@@ -380,9 +375,8 @@ host_heat = {
     "targets": [
         target("A", f"{CPU_TEMPERATURE} and on(environment) {SELECTED_POOL_HOSTS_DAY}", "{{environment}} \u00b0C",
                range=True),
-        target("B", f"sum by (environment) (increase({THROTTLES}[10m])) and on(environment) {SELECTED_POOL_HOSTS_DAY}",
-               "{{environment}} throttle events",
-               interval="10m", range=True),
+        target("B", f"{cpu_throttling_percent('1h')} and on(environment) {SELECTED_POOL_HOSTS_DAY}",
+               "{{environment}} % throttling", interval="10m", range=True),
     ],
 }
 
@@ -521,6 +515,8 @@ cameras_below_99 = {
         "overrides": [
             *[hide(label_name) for label_name in ["Time", "__name__", "job", "name", "group"]],
             rename("environment", "server"),
+            # The panel's percent unit would otherwise print camera 4 as "4%".
+            rename("camera_id", "camera", {"id": "unit", "value": "none"}),
             rename("Value", "% time without camera/LAN fault", {"id": "custom.cellOptions", "value": {"type": "color-background"}}),
         ],
     },
