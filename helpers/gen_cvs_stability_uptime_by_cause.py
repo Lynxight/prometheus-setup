@@ -11,6 +11,7 @@ never renumber existing ones.
 import json
 import os
 import pathlib
+import re
 
 # The Prometheus datasource provisioned with a fixed uid in grafana/provisioning/datasources/datasource.yml.
 DS = {"type": "prometheus", "uid": "PBFA97CFB590B2093"}
@@ -660,13 +661,14 @@ downtime_by_cause_trend = {
 def counter_rise(count_expr):
     """count_expr over the range, less the same count over the window before it, at least 0. A server whose CVS
     does not push the metric has no value (not measured); one that pushes it and had no failure has 0."""
-    baseline_expr = count_expr.replace("[$__range]", "[$__range] offset $__range")
+    # The window is [$__range], or a subquery over it such as [$__range:1m]
+    baseline_expr = re.sub(r"(\[\$__range(?::\w+)?\])", r"\1 offset $__range", count_expr)
     return f"clamp_min({count_expr} - ({baseline_expr} or {count_expr} * 0), 0)"
 
 
 WHY_SIGNALS = [
-    ("GPU failures", f"sum by (environment) (changes(detection_last_gpu_failure_timestamp_seconds{{{SERVER_HOST}}}"
-                     f"[$__range]))"),
+    ("GPU failing (minutes)", f"sum by (environment) (sum_over_time(detection_gpu_failed{{{SERVER_HOST}}}"
+                              f"[$__range:1m]))"),
     ("DNS lookup failures", f'sum by (environment) (increase(cvs_test_connection_failed{{{SERVER_HOST}, '
                             f'error="gaierror"}}[$__range]))'),
     ("Port 53 unreachable", f'sum by (environment) (increase(cvs_test_connection_failed{{{SERVER_HOST}, '
@@ -692,8 +694,8 @@ downtime_why_signals_table = {
     "description": "For each server with a selected pool, how many more times each failure was reported to "
                    "Prometheus in the selected range than in the window of the same length before it (0 = no rise). "
                    "'not measured' = the server's CVS version does not push that metric, or the server pushed "
-                   "nothing. Counts: GPU failures = times Detection exited on a GPU failure (the first one of a pool "
-                   "in the range never counts: the metric holds the time of the pool's last one); "
+                   "nothing. Counts: GPU failing (minutes) = minutes in which Detection's gauge said the GPU was "
+                   "failing, summed over the server's pools; "
                    "DNS lookup failures and port 53 = failed hourly connection tests; IoT publish/connect failures "
                    "and expired cloud messages = the CloudGateway's link to AWS IoT; camera stream errors and "
                    "pipeline stalls = VideoStream; camera settings push failures = cameras whose last push "
