@@ -1202,7 +1202,7 @@
           "id": 33,
           "type": "table",
           "title": "Downtime signals: rise above the server's baseline (per server)",
-          "description": "For each server with a selected pool, how many more times each failure was reported to Prometheus in the selected range than in the window of the same length before it (0 = no rise). 'not measured' = the server's CVS version does not push that metric, or the server pushed nothing. Counts: GPU failing (minutes) = minutes in which Detection's gauge said the GPU was failing, summed over the server's pools; DNS lookup failures and port 53 = failed hourly connection tests; IoT publish/connect failures and expired cloud messages = the CloudGateway's link to AWS IoT; camera stream errors and pipeline stalls = VideoStream; camera settings push failures = cameras whose last push failed; OCR failures = OCR runs where every attempt failed.",
+          "description": "For each server with a selected pool, how many more times each failure was reported to Prometheus in the selected range than in the window of the same length before it (0 = no rise). 'not measured' = the server's CVS version does not push that metric, or the server pushed nothing. Counts: GPU failing (minutes) = minutes in which Detection's gauge said at any time that the GPU was failing, summed over the server's pools; DNS lookup failures and port 53 = failed hourly connection tests; IoT publish/connect failures and expired cloud messages = the CloudGateway's link to AWS IoT; camera stream errors and pipeline stalls = VideoStream; camera settings push failures = cameras whose last push failed; OCR failures = OCR runs where every attempt failed.",
           "datasource": {
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
@@ -1378,7 +1378,7 @@
                 "uid": "PBFA97CFB590B2093"
               },
               "editorMode": "code",
-              "expr": "clamp_min(sum by (environment) (sum_over_time(detection_gpu_failed{environment=~\"$server\"}[$__range:1m])) - (sum by (environment) (sum_over_time(detection_gpu_failed{environment=~\"$server\"}[$__range:1m] offset $__range)) or sum by (environment) (sum_over_time(detection_gpu_failed{environment=~\"$server\"}[$__range:1m])) * 0), 0) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
+              "expr": "clamp_min(sum by (environment) (sum_over_time(max_over_time(detection_gpu_failed{environment=~\"$server\"}[1m])[$__range:1m])) - (sum by (environment) (sum_over_time(max_over_time(detection_gpu_failed{environment=~\"$server\"}[1m])[$__range:1m] offset $__range)) or sum by (environment) (sum_over_time(max_over_time(detection_gpu_failed{environment=~\"$server\"}[1m])[$__range:1m])) * 0), 0) and on(environment) group by (environment) (max_over_time(swimmer_count{environment=~\"$server\", site_name=~\"$site_name\", pool_name=~\"$pool_name\", pool_state=~\"$pool_state\", group=~\"$deploy_group\", under_maintenance=~\"$under_maintenance\"}[$__range:1h]))",
               "legendFormat": "",
               "refId": "A",
               "format": "table",

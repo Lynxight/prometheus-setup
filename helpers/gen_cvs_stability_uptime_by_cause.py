@@ -667,8 +667,10 @@ def counter_rise(count_expr):
 
 
 WHY_SIGNALS = [
-    ("GPU failing (minutes)", f"sum by (environment) (sum_over_time(detection_gpu_failed{{{SERVER_HOST}}}"
-                              f"[$__range:1m]))"),
+    # A minute counts if the gauge was 1 at any time in it: a GPU that fails every few seconds flips the gauge
+    # between 0 and 1, and its value at one moment of the minute would count only some of those minutes.
+    ("GPU failing (minutes)", f"sum by (environment) (sum_over_time(max_over_time(detection_gpu_failed"
+                              f"{{{SERVER_HOST}}}[1m])[$__range:1m]))"),
     ("DNS lookup failures", f'sum by (environment) (increase(cvs_test_connection_failed{{{SERVER_HOST}, '
                             f'error="gaierror"}}[$__range]))'),
     ("Port 53 unreachable", f'sum by (environment) (increase(cvs_test_connection_failed{{{SERVER_HOST}, '
@@ -694,8 +696,8 @@ downtime_why_signals_table = {
     "description": "For each server with a selected pool, how many more times each failure was reported to "
                    "Prometheus in the selected range than in the window of the same length before it (0 = no rise). "
                    "'not measured' = the server's CVS version does not push that metric, or the server pushed "
-                   "nothing. Counts: GPU failing (minutes) = minutes in which Detection's gauge said the GPU was "
-                   "failing, summed over the server's pools; "
+                   "nothing. Counts: GPU failing (minutes) = minutes in which Detection's gauge said at any time "
+                   "that the GPU was failing, summed over the server's pools; "
                    "DNS lookup failures and port 53 = failed hourly connection tests; IoT publish/connect failures "
                    "and expired cloud messages = the CloudGateway's link to AWS IoT; camera stream errors and "
                    "pipeline stalls = VideoStream; camera settings push failures = cameras whose last push "
