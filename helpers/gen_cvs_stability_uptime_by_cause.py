@@ -665,8 +665,8 @@ def counter_rise(count_expr):
 
 
 WHY_SIGNALS = [
-    ("CUDA failures", f"sum by (environment) (changes(cvs_last_cuda_failure_timestamp_seconds{{{SERVER_HOST}}}"
-                      f"[$__range]))"),
+    ("GPU failures", f"sum by (environment) (changes(detection_last_gpu_failure_timestamp_seconds{{{SERVER_HOST}}}"
+                     f"[$__range]))"),
     ("DNS lookup failures", f'sum by (environment) (increase(cvs_test_connection_failed{{{SERVER_HOST}, '
                             f'error="gaierror"}}[$__range]))'),
     ("Port 53 unreachable", f'sum by (environment) (increase(cvs_test_connection_failed{{{SERVER_HOST}, '
@@ -692,8 +692,8 @@ downtime_why_signals_table = {
     "description": "For each server with a selected pool, how many more times each failure was reported to "
                    "Prometheus in the selected range than in the window of the same length before it (0 = no rise). "
                    "'not measured' = the server's CVS version does not push that metric, or the server pushed "
-                   "nothing. Counts: CUDA failures = exceptions a service reported that came from CUDA (the first one "
-                   "of a service never counts: the metric holds the time of the last one); "
+                   "nothing. Counts: GPU failures = times Detection exited on a GPU failure (the first one of a pool "
+                   "in the range never counts: the metric holds the time of the pool's last one); "
                    "DNS lookup failures and port 53 = failed hourly connection tests; IoT publish/connect failures "
                    "and expired cloud messages = the CloudGateway's link to AWS IoT; camera stream errors and "
                    "pipeline stalls = VideoStream; camera settings push failures = cameras whose last push "
